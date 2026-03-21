@@ -7,7 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
 <!-- Aplicar modo audiencia ANTES del render para evitar pantalla en blanco -->
-<script>if(location.search.includes('audience'))document.documentElement.classList.add('is-audience');</script>
+<script>
+  (function(){
+    var p = location.search || location.hash || '';
+    if(p.includes('audience')){
+      document.documentElement.classList.add('is-audience');
+    }
+  })();
+</script>
 <style>
 html.is-audience #app{display:none!important}
 html.is-audience #screen-public{display:flex!important}
@@ -274,11 +281,16 @@ input[type=range]{accent-color:var(--naranja)}
 /* ══════════ PUBLIC VIEW ══════════ */
 #screen-public{
   background:var(--naranja);min-height:100vh;
-  display:none;flex-direction:column;
+  display:none;
+  flex-direction:column;
   align-items:center;justify-content:center;
   padding:40px 60px;text-align:center;
 }
-#screen-public.active{display:flex}
+#screen-public.active,
+html.is-audience #screen-public{
+  display:flex;
+  flex-direction:column;
+}
 /* Cuando la página carga en modo audiencia, mostrar inmediatamente */
 .pub-header{
   position:fixed;top:0;left:0;right:0;
@@ -694,7 +706,7 @@ Categoría,easy,10</pre>
    El moderador emite; la audiencia escucha y se renderiza.
 ══════════════════════════════════════ */
 const BC_NAME = 'trivia-cmis-v3';
-const IS_AUDIENCE = location.search.includes('audience');
+const IS_AUDIENCE = (location.search + location.hash).includes('audience');
 const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(BC_NAME) : null;
 
 // Serializa el estado para broadcast (excluye timerInterval que no es transferible)
