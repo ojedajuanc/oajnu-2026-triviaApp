@@ -6,16 +6,8 @@
 <title>Trivia OAJNU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-<!-- Aplicar modo audiencia ANTES del render para evitar pantalla en blanco -->
-<script>
-  (function(){
-    var p = location.search || location.hash || '';
-    if(p.includes('audience')){
-      document.documentElement.classList.add('is-audience');
-    }
-  })();
-</script>
 <style>
+/* audience mode - activated by JS after Firebase role detection */
 html.is-audience #app{display:none!important}
 html.is-audience #screen-public{display:flex!important}
 /* ══════════════════════════════════════════
@@ -700,39 +692,98 @@ Categoría,easy,10</pre>
 
 <script>
 /* ══════════════════════════════════════
-   BROADCAST CHANNEL — sincronización entre pestañas
-   • La pestaña que arranca SIN ?audience en la URL = MODERADOR
-   • La pestaña que arranca CON  ?audience en la URL = PANTALLA PÚBLICA
-   El moderador emite; la audiencia escucha y se renderiza.
+   FIREBASE — sincronización en tiempo real
+   • ?audience  → pantalla pública (solo lectura)
+   • sin param  → moderador (lee + escribe)
+   Reemplaza completamente BroadcastChannel.
 ══════════════════════════════════════ */
-const BC_NAME = 'trivia-cmis-v3';
+
+// ── Configuración Firebase (completar con tus datos) ──
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBrEkdO1zUNzarBPjXLNYC8Iw5YXuehyKg",
+  authDomain: "trivaapp-oajnu.firebaseapp.com",
+  databaseURL: "https://trivaapp-oajnu-default-rtdb.firebaseio.com",
+  projectId: "trivaapp-oajnu",
+  storageBucket: "trivaapp-oajnu.firebasestorage.app",
+  messagingSenderId: "556848845323",
+  appId: "1:556848845323:web:a80fd25762680cdcdb6d0e"
+};
+
+const FB_PATH = 'trivia/estado'; // nodo en Realtime Database
+
+// Detección de rol
 const IS_AUDIENCE = (location.search + location.hash).includes('audience');
-const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(BC_NAME) : null;
 
-// Serializa el estado para broadcast (excluye timerInterval que no es transferible)
-function broadcastState(extra) {
-  if (!bc || IS_AUDIENCE) return;
+// SDK Firebase (cargado dinámicamente para mantener todo en un solo archivo)
+let fbDatabase = null;
+let fbRef      = null;
+
+function initFirebase() {
+  return new Promise((resolve) => {
+    // Cargar Firebase App + Database via CDN
+    const scripts = [
+      'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
+      'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js'
+    ];
+    let loaded = 0;
+    scripts.forEach(src => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => { if (++loaded === scripts.length) resolve(); };
+      document.head.appendChild(s);
+    });
+  });
+}
+
+async function setupFirebase() {
+  await initFirebase();
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  fbDatabase = firebase.database();
+  fbRef      = fbDatabase.ref(FB_PATH);
+
+  if (IS_AUDIENCE) {
+    // ── MODO AUDIENCIA: escuchar cambios en tiempo real ──
+    document.documentElement.classList.add('is-audience');
+    document.title = 'Trivia OAJNU · Pantalla Pública';
+    const backBtn = document.querySelector('.pub-back');
+    if (backBtn) backBtn.style.display = 'none';
+    document.getElementById('pub-q').textContent   = 'Esperando al moderador...';
+    document.getElementById('pub-tnum').textContent = '—';
+
+    fbRef.on('value', snap => {
+      const d = snap.val();
+      if (d) renderAudienceState(d);
+    });
+
+  } else {
+    // ── MODO MODERADOR: nada extra, broadcastState() escribe a Firebase ──
+    // Si hay una sesión activa en Firebase, la ignoramos (moderador siempre manda)
+  }
+}
+
+// Escribe el estado del juego a Firebase (solo moderador)
+function broadcastState() {
+  if (IS_AUDIENCE || !fbRef) return;
   const payload = {
-    type: 'state',
-    currentQ:       G.currentQ,
-    questions:      G.questions,
-    teams:          G.teams,
-    scores:         G.scores,
-    timerLeft:      G.timerLeft,
-    timerDuration:  G.timerDuration,
-    timerRunning:   G.timerRunning,
-    buzzedTeam:     G.buzzedTeam,
-    gameStarted:    G.gameStarted || false,
-    ...extra
+    currentQ:      G.currentQ,
+    questions:     G.questions,
+    teams:         G.teams,
+    scores:        G.scores,
+    timerLeft:     G.timerLeft,
+    timerDuration: G.timerDuration,
+    timerRunning:  G.timerRunning,
+    buzzedTeam:    G.buzzedTeam || null,
+    gameStarted:   G.gameStarted || false
   };
-  bc.postMessage(payload);
+  fbRef.set(payload).catch(err => console.warn('Firebase write error:', err));
 }
 
-// Solicitar estado actual al moderador (útil cuando la pestaña audiencia se abre tarde)
-function requestState() {
-  if (!bc) return;
-  bc.postMessage({ type: 'request-state' });
-}
+// Compatibilidad: requestState ya no es necesaria con Firebase (el listener on('value') 
+// entrega el estado actual inmediatamente al conectarse)
+function requestState() {}
+
+// Inicializar Firebase al cargar la página
+setupFirebase();
 
 /* ══════════════════════════════════════
    CONSTANTES
@@ -1467,28 +1518,8 @@ renderSedes(); renderTeamList(); renderQuestions(); renderCatList(); syncCatSele
 /* ══════════════════════════════════════
    AUDIENCE MODE — se activa con ?audience en la URL
 ══════════════════════════════════════ */
-if (IS_AUDIENCE) {
-  // La visibilidad ya la maneja el CSS (html.is-audience en el <head>)
-  // Solo configuramos título, textos de espera y BroadcastChannel
-  document.title = 'Trivia OAJNU · Pantalla Pública';
-  const backBtn = document.querySelector('.pub-back');
-  if (backBtn) backBtn.style.display = 'none';
-  document.getElementById('pub-q').textContent = 'Esperando al moderador...';
-  document.getElementById('pub-tnum').textContent = '—';
-  if (bc) {
-    bc.onmessage = (e) => {
-      if (e.data.type === 'state') renderAudienceState(e.data);
-    };
-    requestState();
-  }
-}
 
-// El moderador responde a pedidos de estado
-if (!IS_AUDIENCE && bc) {
-  bc.onmessage = (e) => {
-    if (e.data.type === 'request-state') broadcastState();
-  };
-}
+
 
 function renderAudienceState(d) {
   const teams    = d.teams    || [];
