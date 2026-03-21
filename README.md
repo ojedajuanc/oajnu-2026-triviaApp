@@ -1,4 +1,4 @@
-# 🎯 Trivia de CMIs · OAJNU
+# 🎯 App de Trivias · OAJNU
 
 Herramienta de trivia interactiva para capacitaciones de OAJNU. Identidad visual según el Manual de Identidad Visual Institucional 2023. Funciona 100% en el navegador, sin dependencias ni servidor.
 
@@ -16,21 +16,6 @@ Herramienta de trivia interactiva para capacitaciones de OAJNU. Identidad visual
 - **Estadísticas finales**: podio, rendimiento por equipo y por categoría
 - **Exportar resultados** en `.txt`
 
-## 🚀 Publicar en GitHub Pages
-
-```bash
-git init trivia-cmis
-cd trivia-cmis
-# Copiá index.html, preguntas-ejemplo.csv y preguntas-ejemplo.json
-git add .
-git commit -m "Trivia de CMIs v3 - identidad OAJNU + importación de preguntas"
-git remote add origin https://github.com/TU-USUARIO/trivia-cmis.git
-git push -u origin main
-```
-
-Luego: **Settings → Pages → Source: main / (root)** → Save.
-
-URL resultante: `https://tu-usuario.github.io/trivia-cmis/`
 
 ## 📋 Formato de archivos de preguntas
 
@@ -59,7 +44,7 @@ pregunta,respuesta,explicacion,categoria,dificultad,puntos
 ## 📁 Archivos del repositorio
 
 ```
-trivia-cmis/
+trivia/
 ├── index.html               # App completa (self-contained)
 ├── preguntas-ejemplo.csv    # Plantilla CSV con preguntas de ejemplo
 ├── preguntas-ejemplo.json   # Plantilla JSON con preguntas de ejemplo
