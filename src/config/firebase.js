@@ -13,13 +13,14 @@ import { FB_PATH } from './constants.js';
  * Google Cloud Console → APIs & Services → Credentials → Browser key → HTTP referrers
  */
 const FIREBASE_CONFIG = {
-  apiKey:            'REEMPLAZAR',
-  authDomain:        'REEMPLAZAR.firebaseapp.com',
-  databaseURL:       'https://REEMPLAZAR-default-rtdb.firebaseio.com',
-  projectId:         'REEMPLAZAR',
-  storageBucket:     'REEMPLAZAR.appspot.com',
-  messagingSenderId: 'REEMPLAZAR',
-  appId:             'REEMPLAZAR',
+  apiKey: "AIzaSyBrEkdO1zUNzarBPjXLNYC8Iw5YXuehyKg",
+  authDomain: "trivaapp-oajnu.firebaseapp.com",
+  databaseURL: "https://trivaapp-oajnu-default-rtdb.firebaseio.com",
+  projectId: "trivaapp-oajnu",
+  storageBucket: "trivaapp-oajnu.firebasestorage.app",
+  messagingSenderId: "556848845323",
+  appId: "1:556848845323:web:a80fd25762680cdcdb6d0e",
+  measurementId: "G-LRVBY5M089"
 };
 
 const app = initializeApp(FIREBASE_CONFIG);
