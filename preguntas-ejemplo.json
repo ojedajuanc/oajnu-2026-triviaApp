@@ -1,0 +1,34 @@
+[
+  {
+    "pregunta": "¿En qué año fue fundada la ONU?",
+    "respuesta": "1945",
+    "explicacion": "La ONU fue fundada el 24 de octubre de 1945 tras la Segunda Guerra Mundial.",
+    "categoria": "Historia",
+    "dificultad": "easy",
+    "puntos": 10
+  },
+  {
+    "pregunta": "¿Cuántos países miembros tiene la ONU?",
+    "respuesta": "193",
+    "explicacion": "193 estados miembros. El último en ingresar fue Sudán del Sur en 2011.",
+    "categoria": "Institucional",
+    "dificultad": "mid",
+    "puntos": 15
+  },
+  {
+    "pregunta": "¿Qué significa ODS?",
+    "respuesta": "Objetivos de Desarrollo Sostenible",
+    "explicacion": "17 objetivos adoptados en 2015 como parte de la Agenda 2030 para el Desarrollo Sostenible.",
+    "categoria": "Agenda 2030",
+    "dificultad": "easy",
+    "puntos": 10
+  },
+  {
+    "pregunta": "¿Cuáles son los 6 órganos principales de la ONU?",
+    "respuesta": "Asamblea General, Consejo de Seguridad, Secretaría, CIJ, ECOSOC, Consejo de Tutela",
+    "explicacion": "Establecidos por la Carta de la ONU firmada en San Francisco en 1945.",
+    "categoria": "Estructura",
+    "dificultad": "hard",
+    "puntos": 20
+  }
+]
