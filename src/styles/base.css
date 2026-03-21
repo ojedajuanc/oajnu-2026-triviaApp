@@ -1,0 +1,69 @@
+/* ─────────────────────────────────────────
+   BASE — reset, body, tipografía, pantallas
+───────────────────────────────────────── */
+
+html, body {
+  min-height: 100%;
+  background: var(--c-gris-f);
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  color: var(--c-texto);
+}
+
+#app { min-height: 100vh; }
+
+/* Screens */
+.screen        { display: none; padding: 24px; }
+.screen.active { display: block; }
+
+/* App header */
+.app-header {
+  background: var(--c-naranja);
+  height: 56px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-header .brand {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--c-blanco);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.app-header .subbrand {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, .75);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.oajnu-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--c-blanco);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Typography helpers */
+.label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--c-gris-b);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.empty-msg {
+  text-align: center;
+  color: var(--c-gris-b);
+  font-size: 13px;
+  padding: 20px;
+}

@@ -1,1586 +1,362 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trivia OAJNU</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-<!-- Detectar modo audiencia ANTES del primer render — evita flash de pantalla en blanco -->
-<script>if(location.hash.includes('audience'))document.documentElement.classList.add('is-audience');</script>
-<style>
-html.is-audience #app{display:none!important}
-html.is-audience #screen-public{display:flex!important}
-/* ══════════════════════════════════════════
-   OAJNU BRAND TOKENS
-   Primario:     #E05206 (naranja)
-   Complementario: #009AA6 (cyan)
-   Soporte:      blanco / #F5F5F5 / #333 / negro
-   Tipografía:   Nunito (900=Black, 800=ExtraBold, 400=Regular)
-══════════════════════════════════════════ */
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --naranja:#E05206;
-  --naranja-d:#b33e00;
-  --naranja-l:#f97a3e;
-  --naranja-bg:#fff3ee;
-  --cyan:#009AA6;
-  --cyan-d:#007880;
-  --cyan-l:#33b8c3;
-  --cyan-bg:#e6f7f8;
-  --blanco:#ffffff;
-  --gris-f:#F5F5F5;
-  --gris-m:#e0e0e0;
-  --gris-b:#999;
-  --negro:#1a1a1a;
-  --texto:#333333;
-  --r:12px;
-  --r-sm:8px;
-}
-html,body{min-height:100%;background:var(--gris-f)}
-body{font-family:'Nunito',sans-serif;color:var(--texto);margin:0}
-#app{min-height:100vh}
-
-/* ── SCREENS ── */
-.screen{display:none;padding:24px}
-.screen.active{display:block}
-
-/* ── LOGO HEADER ── */
-.app-header{
-  background:var(--naranja);
-  padding:0 24px;
-  display:flex;align-items:center;gap:16px;
-  height:56px;
-}
-.app-header .brand{
-  font-size:20px;font-weight:900;color:var(--blanco);
-  letter-spacing:1px;text-transform:uppercase;
-}
-.app-header .subbrand{
-  font-size:11px;font-weight:400;color:rgba(255,255,255,.75);
-  letter-spacing:2px;text-transform:uppercase;margin-left:2px;
-}
-.oajnu-dot{
-  width:32px;height:32px;border-radius:50%;
-  background:var(--blanco);
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:900;color:var(--naranja);
-  flex-shrink:0;letter-spacing:-0.5px;
-}
-
-/* ── CARDS ── */
-.card{
-  background:var(--blanco);border-radius:var(--r);
-  border:1.5px solid var(--gris-m);
-  padding:18px;margin-bottom:12px;
-}
-.card-cyan{background:var(--cyan-bg);border-color:#b2e0e4}
-.card-naranja{background:var(--naranja-bg);border-color:#f5c4ae}
-
-/* ── TYPOGRAPHY ── */
-.titulo{font-size:22px;font-weight:900;color:var(--naranja);margin-bottom:4px}
-.subtitulo{font-size:13px;font-weight:400;color:var(--gris-b);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
-.label{font-size:10px;font-weight:800;color:var(--gris-b);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
-
-/* ── TABS ── */
-.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--gris-m);background:var(--blanco);border-radius:var(--r) var(--r) 0 0;overflow:hidden}
-.tab{padding:12px 18px;cursor:pointer;font-size:13px;font-weight:700;color:var(--gris-b);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
-.tab.active{color:var(--naranja);border-bottom-color:var(--naranja)}
-.tab:hover:not(.active){color:var(--texto)}
-
-/* ── BUTTONS ── */
-.btn{
-  padding:10px 20px;border-radius:var(--r-sm);border:none;cursor:pointer;
-  font-size:13px;font-family:'Nunito',sans-serif;font-weight:800;
-  transition:all .15s;display:inline-flex;align-items:center;gap:6px;
-}
-.btn-naranja{background:var(--naranja);color:var(--blanco)}.btn-naranja:hover{background:var(--naranja-d)}
-.btn-cyan{background:var(--cyan);color:var(--blanco)}.btn-cyan:hover{background:var(--cyan-d)}
-.btn-outline-naranja{background:transparent;border:2px solid var(--naranja);color:var(--naranja)}.btn-outline-naranja:hover{background:var(--naranja-bg)}
-.btn-outline{background:transparent;border:2px solid var(--gris-m);color:var(--texto)}.btn-outline:hover{border-color:var(--naranja);color:var(--naranja)}
-.btn-success{background:#2e7d32;color:#fff}.btn-success:hover{background:#1b5e20}
-.btn-danger{background:#c62828;color:#fff}.btn-danger:hover{background:#8b0000}
-.btn-sm{padding:6px 12px;font-size:12px;border-radius:var(--r-sm)}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* ── INPUTS ── */
-input[type=text],input[type=number],select,textarea{
-  background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r-sm);
-  color:var(--texto);padding:9px 12px;font-size:13px;font-family:'Nunito',sans-serif;
-  font-weight:400;outline:none;width:100%;transition:border .15s;
-}
-input:focus,select:focus,textarea:focus{border-color:var(--naranja)}
-textarea{resize:vertical;min-height:60px}
-select option{background:#fff}
-input[type=range]{accent-color:var(--naranja)}
-
-/* ── MODE CARDS ── */
-.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
-.mode-card{
-  background:var(--blanco);border:2px solid var(--gris-m);border-radius:var(--r);
-  padding:20px;cursor:pointer;text-align:center;transition:all .2s;
-}
-.mode-card.selected{border-color:var(--naranja);background:var(--naranja-bg)}
-.mode-card h3{font-size:16px;font-weight:900;color:var(--naranja);margin-bottom:4px}
-.mode-card p{font-size:11px;color:var(--gris-b)}
-
-/* ── TEAM ITEMS ── */
-.team-item{
-  display:flex;align-items:center;gap:10px;
-  background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r-sm);
-  padding:10px 14px;margin-bottom:7px;
-}
-.team-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.team-item span{flex:1;font-size:13px;font-weight:700}
-.team-item button{background:none;border:none;color:var(--gris-b);cursor:pointer;font-size:16px;line-height:1}
-
-/* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.5px}
-.badge-easy{background:#e8f5e9;color:#2e7d32}
-.badge-mid{background:#fff3e0;color:#e65100}
-.badge-hard{background:#fce4ec;color:#c62828}
-.badge-cat{background:var(--cyan-bg);color:var(--cyan-d)}
-.badge-pts{background:var(--naranja-bg);color:var(--naranja-d)}
-
-/* ── QUESTION ITEMS (setup) ── */
-.q-item{
-  background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r);
-  padding:14px;margin-bottom:8px;position:relative;
-}
-.q-meta{display:flex;gap:6px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
-.q-text-d{font-size:13px;font-weight:700;color:var(--negro);margin-bottom:4px;line-height:1.4}
-.q-ans-d{font-size:12px;color:#2e7d32;font-weight:700}
-.q-exp-d{font-size:11px;color:var(--cyan-d);margin-top:3px;font-style:italic}
-.q-delete{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--gris-b);cursor:pointer;font-size:16px}
-.q-img-th{max-width:70px;max-height:45px;border-radius:6px;margin-top:6px;object-fit:cover}
-
-/* ══════════ IMPORT SECTION ══════════ */
-.import-zone{
-  border:2px dashed var(--gris-m);border-radius:var(--r);
-  padding:24px;text-align:center;cursor:pointer;
-  transition:all .2s;background:var(--gris-f);
-  margin-bottom:12px;
-}
-.import-zone:hover,.import-zone.dragover{border-color:var(--naranja);background:var(--naranja-bg)}
-.import-zone p{font-size:13px;color:var(--gris-b);margin-top:6px}
-.import-zone strong{font-size:14px;font-weight:800;color:var(--texto)}
-.import-icon{font-size:28px;margin-bottom:6px}
-.import-formats{
-  display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;
-}
-.fmt-pill{
-  background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:20px;
-  padding:3px 12px;font-size:11px;font-weight:800;color:var(--gris-b);
-}
-.fmt-pill.csv{border-color:var(--cyan);color:var(--cyan-d);background:var(--cyan-bg)}
-.fmt-pill.json{border-color:var(--naranja);color:var(--naranja-d);background:var(--naranja-bg)}
-
-/* ══════════ GAME SCREEN ══════════ */
-.game-header{
-  background:var(--naranja);
-  padding:12px 20px;
-  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-}
-.game-brand{font-size:15px;font-weight:900;color:var(--blanco);letter-spacing:1px;text-transform:uppercase}
-.q-counter-wrap{flex:1;text-align:center}
-.q-counter-num{font-size:24px;font-weight:900;color:var(--blanco);line-height:1}
-.q-counter-lbl{font-size:10px;font-weight:400;color:rgba(255,255,255,.7);letter-spacing:1px}
-.game-actions{display:flex;gap:7px;flex-wrap:wrap}
-.game-actions .btn{font-size:11px;padding:7px 13px}
-.btn-white{background:var(--blanco);color:var(--naranja);font-weight:800}.btn-white:hover{background:var(--naranja-bg)}
-.btn-white-outline{background:transparent;border:2px solid rgba(255,255,255,.5);color:var(--blanco)}.btn-white-outline:hover{border-color:var(--blanco)}
-
-.game-body{display:grid;grid-template-columns:1fr 260px;min-height:calc(100vh - 56px)}
-@media(max-width:720px){.game-body{grid-template-columns:1fr}}
-.question-panel{padding:20px;overflow-y:auto;background:var(--gris-f)}
-.score-panel{background:var(--blanco);border-left:2px solid var(--gris-m);overflow:hidden}
-.score-head{padding:14px 16px;background:var(--naranja);display:flex;align-items:center;gap:8px}
-.score-head h3{font-size:11px;font-weight:900;color:var(--blanco);letter-spacing:2px;text-transform:uppercase}
-
-/* ── TIMER ── */
-.timer-card{background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r);padding:16px;margin-bottom:14px}
-.timer-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.timer-status{font-size:10px;font-weight:800;color:var(--gris-b);letter-spacing:1px;text-transform:uppercase}
-.timer-bar{height:8px;background:var(--gris-m);border-radius:4px;overflow:hidden;margin-bottom:6px}
-.timer-fill{height:100%;background:var(--naranja);border-radius:4px;transition:width 1s linear,background .3s}
-.timer-fill.warn{background:#e65100}.timer-fill.danger{background:#c62828}
-.timer-num{font-size:36px;font-weight:900;color:var(--naranja);text-align:center;line-height:1}
-
-/* ── Q DISPLAY ── */
-.q-card{background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r);padding:20px;margin-bottom:14px}
-.q-card-meta{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
-.q-card-text{font-size:18px;font-weight:800;color:var(--negro);line-height:1.5}
-.q-card-ans{font-size:13px;font-weight:700;color:#2e7d32;margin-top:12px;padding-top:12px;border-top:1.5px solid var(--gris-m);display:none}
-.q-card-exp{font-size:12px;color:var(--cyan-d);margin-top:8px;padding:10px;background:var(--cyan-bg);border-radius:var(--r-sm);display:none;line-height:1.5;font-weight:700}
-.q-card-img{max-width:100%;max-height:180px;border-radius:var(--r-sm);margin-top:12px;object-fit:contain;display:none}
-
-/* ── BUZZED ── */
-.buzzed-card{
-  background:var(--naranja-bg);border:2px solid var(--naranja);
-  border-radius:var(--r);padding:14px;text-align:center;margin-bottom:12px;display:none;
-}
-.buzzed-card.active{display:block}
-.buzzed-lbl{font-size:9px;font-weight:900;color:var(--naranja);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
-.buzzed-name{font-size:20px;font-weight:900;color:var(--naranja)}
-
-/* ── BUZZER GRID ── */
-.buzzer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.buzzer-btn{
-  padding:12px 8px;border-radius:var(--r-sm);
-  border:2px solid var(--gris-m);background:var(--blanco);
-  color:var(--texto);cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif;
-  font-weight:800;text-align:center;transition:all .15s;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-}
-.buzzer-btn:hover{border-color:var(--naranja);color:var(--naranja);background:var(--naranja-bg)}
-.bz-dot{width:10px;height:10px;border-radius:50%}
-
-/* ── JUDGE ── */
-.judge-row{display:flex;gap:8px;margin-bottom:14px}
-.judge-row button{flex:1;font-size:12px}
-
-/* ── CONTROLS ── */
-.controls-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-
-/* ── COMODIN ── */
-.comodin-btn{
-  display:flex;align-items:center;gap:8px;padding:10px 14px;
-  border-radius:var(--r-sm);border:2px solid #7b1fa2;
-  background:#f3e5f5;color:#6a1b9a;cursor:pointer;
-  font-size:12px;font-family:'Nunito',sans-serif;font-weight:800;
-  width:100%;margin-bottom:12px;transition:all .15s;
-}
-.comodin-btn:hover{background:#e1bee7}
-.comodin-btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* ── SCOREBOARD ── */
-.score-list{padding:10px}
-.score-item{
-  display:flex;align-items:center;gap:8px;
-  padding:10px 12px;border-radius:var(--r-sm);
-  margin-bottom:6px;background:var(--gris-f);
-  border:1.5px solid var(--gris-m);
-  position:relative;overflow:hidden;transition:all .3s;
-}
-.score-item.first-place{background:var(--naranja-bg);border-color:var(--naranja)}
-.score-rank{font-size:11px;font-weight:900;color:var(--gris-b);width:20px;text-align:right;flex-shrink:0}
-.score-rank.star{color:var(--naranja)}
-.score-name{flex:1;font-size:12px;font-weight:800}
-.score-pts{font-size:16px;font-weight:900;color:var(--naranja)}
-.score-delta{font-size:10px;font-weight:900;position:absolute;right:10px;top:4px;opacity:0;transition:opacity .3s}
-.score-delta.show{opacity:1}
-.score-delta.plus{color:#2e7d32}.score-delta.minus{color:#c62828}
-
-/* ══════════ PUBLIC VIEW ══════════ */
-#screen-public{
-  background:var(--naranja);min-height:100vh;
-  display:none;
-  flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:40px 60px;text-align:center;
-}
-#screen-public.active,
-html.is-audience #screen-public{
-  display:flex;
-  flex-direction:column;
-}
-/* Cuando la página carga en modo audiencia, mostrar inmediatamente */
-.pub-header{
-  position:fixed;top:0;left:0;right:0;
-  background:rgba(0,0,0,.15);
-  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
-}
-.pub-brand{font-size:14px;font-weight:900;color:var(--blanco);letter-spacing:2px;text-transform:uppercase}
-.pub-qnum{font-size:12px;font-weight:700;color:rgba(255,255,255,.8)}
-.pub-meta{font-size:11px;font-weight:900;color:rgba(255,255,255,.7);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
-.pub-question{font-size:30px;font-weight:900;color:var(--blanco);line-height:1.4;max-width:760px;margin-bottom:24px}
-.pub-img{max-width:440px;max-height:240px;border-radius:var(--r);margin-bottom:24px;object-fit:contain;display:none;border:4px solid rgba(255,255,255,.3)}
-.pub-timer{font-size:90px;font-weight:900;color:var(--blanco);line-height:1}
-.pub-timer.warn{color:#ffe082}.pub-timer.danger{color:#ffccbc}
-.pub-bar{width:320px;height:10px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden;margin:12px auto 0}
-.pub-bar-fill{height:100%;background:var(--blanco);border-radius:5px;transition:width 1s linear,background .3s}
-.pub-bar-fill.warn{background:#ffe082}.pub-bar-fill.danger{background:#ffccbc}
-.pub-scores{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:28px}
-.pub-score-item{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.15);padding:7px 14px;border-radius:20px}
-.pub-score-dot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
-.pub-score-name{font-size:13px;font-weight:800;color:var(--blanco)}
-.pub-score-pts{font-size:14px;font-weight:900;color:var(--blanco);margin-left:4px}
-.pub-back{
-  position:fixed;top:12px;right:16px;
-  background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);
-  border-radius:var(--r-sm);padding:6px 14px;color:var(--blanco);
-  cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif;font-weight:800;
-}
-
-/* ══════════ FINAL ══════════ */
-.final-tabs{display:flex;border-bottom:2px solid var(--gris-m);background:var(--blanco);padding:0 20px}
-.final-tab{padding:12px 18px;cursor:pointer;font-size:13px;font-weight:800;color:var(--gris-b);border-bottom:3px solid transparent;margin-bottom:-2px}
-.final-tab.active{color:var(--naranja);border-bottom-color:var(--naranja)}
-.final-content{padding:20px;max-width:700px;margin:0 auto}
-
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-.stat-card{background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r);padding:14px;text-align:center}
-.stat-num{font-size:28px;font-weight:900;color:var(--naranja)}
-.stat-lbl{font-size:10px;font-weight:800;color:var(--gris-b);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
-
-.podium-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1.5px solid var(--gris-m)}
-.pr-rank{width:24px;font-size:12px;font-weight:900;color:var(--gris-b)}
-.pr-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.pr-name{flex:1;font-size:14px;font-weight:800}
-.pr-pts{font-size:16px;font-weight:900;color:var(--naranja)}
-
-.cat-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1.5px solid var(--gris-m)}
-.cat-bar-wrap{flex:1;height:7px;background:var(--gris-m);border-radius:4px;overflow:hidden}
-.cat-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
-
-/* ══════════ MODAL ══════════ */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:300}
-.modal-overlay.active{display:flex}
-.modal-box{background:var(--blanco);border-radius:var(--r);padding:24px;max-width:440px;width:90%;border-top:4px solid var(--naranja)}
-.modal-box h3{font-size:18px;font-weight:900;color:var(--naranja);margin-bottom:8px}
-.modal-box p{font-size:13px;color:var(--gris-b);margin-bottom:20px;line-height:1.6}
-.modal-btns{display:flex;gap:10px;justify-content:flex-end}
-
-/* ══════════ IMPORT RESULT ══════════ */
-.import-result{
-  background:var(--cyan-bg);border:1.5px solid var(--cyan);border-radius:var(--r-sm);
-  padding:10px 14px;font-size:12px;font-weight:700;color:var(--cyan-d);
-  margin-bottom:12px;display:none;
-}
-.import-error{background:#fce4ec;border-color:#e57373;color:#c62828}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trivia OAJNU</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <!--
+    Detectar modo audiencia antes del primer paint.
+    Usamos #audience (hash) — GitHub Pages elimina query strings en redirects,
+    pero nunca toca el hash.
+  -->
+  <script>
+    if (location.hash.includes('audience')) {
+      document.documentElement.classList.add('is-audience');
+    }
+  </script>
 </head>
 <body>
+
 <div id="app">
 
-<!-- ═══ SETUP ═══ -->
-<div id="screen-setup" class="screen active">
-  <div class="app-header">
-    <div class="oajnu-dot">
-       <img src="https://oajnu.org/assets/img/oajnu.svg" style="width: 3vh;">
-    </div>
-    <div>
-      <div class="brand">Trivia OAJNU</div>
-      <div class="subbrand">OAJNU · Panel del moderador</div>
-    </div>
-  </div>
-
-  <div style="max-width:700px;margin:24px auto 0">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('t-mode')">Modo</div>
-      <div class="tab" onclick="switchTab('t-import')">Importar preguntas</div>
-      <div class="tab" onclick="switchTab('t-questions')">Preguntas manuales</div>
-      <div class="tab" onclick="switchTab('t-cats')">Categorías</div>
-    </div>
-
-    <!-- TAB MODO -->
-    <div id="t-mode">
-      <div class="label">Modo de competencia</div>
-      <div class="mode-grid">
-        <div class="mode-card selected" id="mc-grupos" onclick="selMode('grupos')">
-          <h3>Grupos</h3><p>Hasta 7 equipos con nombres libres</p>
-        </div>
-        <div class="mode-card" id="mc-sedes" onclick="selMode('sedes')">
-          <h3>Sedes</h3><p>Lista fija de sedes OAJNU</p>
-        </div>
+  <!-- ══ SETUP ══ -->
+  <div id="screen-setup" class="screen active">
+    <div class="app-header">
+      <div class="oajnu-dot">
+        <img src="https://oajnu.org/assets/img/oajnu.svg" style="width:3vh" alt="OAJNU" />
       </div>
-
-      <div id="cfg-grupos">
-        <div class="label">Equipos (máx. 7)</div>
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <input type="text" id="inp-team" placeholder="Nombre del equipo..." onkeydown="if(event.key==='Enter')addTeam()">
-          <button class="btn btn-naranja btn-sm" onclick="addTeam()">+ Agregar</button>
-        </div>
-        <div id="team-list"></div>
-      </div>
-
-      <div id="cfg-sedes" style="display:none">
-        <div class="label">Seleccioná las sedes participantes</div>
-        <div id="sedes-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-      </div>
-
-      <div style="margin-top:18px">
-        <div class="label">Temporizador por pregunta</div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <input type="range" min="10" max="90" value="30" id="inp-timer" style="flex:1"
-            oninput="document.getElementById('timer-v').textContent=this.value">
-          <span id="timer-v" style="font-weight:900;color:var(--naranja);width:32px">30</span>
-          <span style="font-size:11px;color:var(--gris-b)">seg</span>
-        </div>
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="label">Comodines "Pedir ayuda" por equipo</div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <input type="range" min="0" max="5" value="1" id="inp-jokers" style="flex:1"
-            oninput="document.getElementById('joker-v').textContent=this.value">
-          <span id="joker-v" style="font-weight:900;color:#7b1fa2;width:20px">1</span>
-          <span style="font-size:11px;color:var(--gris-b)">por equipo</span>
-        </div>
+      <div>
+        <div class="brand">Trivia OAJNU</div>
+        <div class="subbrand">Panel del moderador</div>
       </div>
     </div>
 
-    <!-- TAB IMPORTAR -->
-    <div id="t-import" style="display:none">
-      <div class="card card-cyan" style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:800;color:var(--cyan-d);margin-bottom:6px">¿Cómo importar preguntas?</div>
-        <p style="font-size:12px;color:var(--texto);line-height:1.6">
-          Podés subir un archivo <strong>CSV</strong> o <strong>JSON</strong> con tus preguntas precargadas.
-          Las preguntas importadas se suman a las cargadas manualmente.
+    <div class="setup-container">
+      <div class="tabs">
+        <div class="tab active"  data-tab="t-mode">Modo</div>
+        <div class="tab"         data-tab="t-import">Importar preguntas</div>
+        <div class="tab"         data-tab="t-questions">Preguntas manuales</div>
+        <div class="tab"         data-tab="t-cats">Categorías</div>
+      </div>
+
+      <!-- TAB: Modo -->
+      <div id="t-mode">
+        <div class="label">Modo de competencia</div>
+        <div class="mode-grid">
+          <div class="mode-card selected" id="mc-grupos" onclick="selectMode('grupos')">
+            <h3>Grupos</h3><p>Hasta 7 equipos con nombres libres</p>
+          </div>
+          <div class="mode-card" id="mc-sedes" onclick="selectMode('sedes')">
+            <h3>Sedes</h3><p>Lista fija de sedes OAJNU</p>
+          </div>
+        </div>
+
+        <div id="cfg-grupos">
+          <div class="label">Equipos (máx. 7)</div>
+          <div class="input-row">
+            <input type="text" id="inp-team" placeholder="Nombre del equipo..."
+              onkeydown="if(event.key==='Enter') addTeam()" />
+            <button class="btn btn--primary btn--sm" onclick="addTeam()">+ Agregar</button>
+          </div>
+          <div id="team-list"></div>
+        </div>
+
+        <div id="cfg-sedes" style="display:none">
+          <div class="label">Seleccioná las sedes participantes</div>
+          <div id="sedes-wrap" class="sedes-grid"></div>
+        </div>
+
+        <div class="field-group">
+          <div class="label">Temporizador por pregunta</div>
+          <div class="range-row">
+            <input type="range" min="10" max="90" value="30" id="inp-timer"
+              oninput="document.getElementById('inp-timer-val').textContent = this.value" />
+            <span id="inp-timer-val" class="range-val">30</span>
+            <span class="range-unit">seg</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="label">Comodines "Pedir ayuda" por equipo</div>
+          <div class="range-row">
+            <input type="range" min="0" max="5" value="1" id="inp-jokers"
+              oninput="document.getElementById('inp-jokers-val').textContent = this.value" />
+            <span id="inp-jokers-val" class="range-val range-val--purple">1</span>
+            <span class="range-unit">por equipo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Importar -->
+      <div id="t-import" style="display:none">
+        <div class="card card--cyan" style="margin-bottom:16px">
+          <div class="import-hint-title">¿Cómo importar preguntas?</div>
+          <p class="import-hint-body">
+            Subí un archivo <strong>CSV</strong> o <strong>JSON</strong>.
+            Las preguntas importadas se suman a las manuales.
+          </p>
+        </div>
+
+        <div class="label">Subir archivo de preguntas</div>
+        <div class="import-zone" id="drop-zone"
+          onclick="document.getElementById('file-inp').click()"
+          ondragover="onDragOver(event)"
+          ondragleave="onDragLeave()"
+          ondrop="onDrop(event)">
+          <div class="import-icon">📂</div>
+          <strong>Hacé clic o arrastrá tu archivo acá</strong>
+          <p>CSV o JSON con las preguntas de la trivia</p>
+          <div class="import-formats">
+            <span class="fmt-pill fmt-pill--csv">CSV</span>
+            <span class="fmt-pill fmt-pill--json">JSON</span>
+          </div>
+        </div>
+        <input type="file" id="file-inp" accept=".csv,.json" style="display:none"
+          onchange="onFileSelect(this)" />
+        <div class="import-msg" id="import-msg"></div>
+
+        <details class="format-details">
+          <summary>Ver formato esperado ▾</summary>
+          <div class="format-grid">
+            <div class="card">
+              <div class="format-label format-label--csv">CSV</div>
+              <pre class="format-pre">pregunta,respuesta,explicacion,
+categoria,dificultad,puntos</pre>
+              <p class="format-note"><strong>dificultad:</strong> easy / mid / hard<br /><strong>puntos:</strong> vacío = automático</p>
+            </div>
+            <div class="card">
+              <div class="format-label format-label--json">JSON</div>
+              <pre class="format-pre">[{ "pregunta":"...",
+   "respuesta":"...",
+   "categoria":"...",
+   "dificultad":"mid" }]</pre>
+            </div>
+          </div>
+          <div class="template-btns">
+            <button class="btn btn--outline btn--sm" onclick="downloadTemplate('csv')">⬇ Plantilla CSV</button>
+            <button class="btn btn--outline btn--sm" onclick="downloadTemplate('json')">⬇ Plantilla JSON</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- TAB: Preguntas manuales -->
+      <div id="t-questions" style="display:none">
+        <div class="card" style="margin-bottom:16px">
+          <div class="label">Nueva pregunta</div>
+          <div class="question-form">
+            <textarea id="inp-q" placeholder="Escribí la pregunta..."></textarea>
+            <input type="text" id="inp-ans"
+              placeholder="Respuesta correcta (solo visible para el moderador)" />
+            <input type="text" id="inp-explain"
+              placeholder="Explicación pedagógica (aparece al revelar respuesta)" />
+            <div class="question-form__meta">
+              <div>
+                <div class="label" style="margin-bottom:5px">Categoría</div>
+                <select id="inp-cat"><option value="">Sin categoría</option></select>
+              </div>
+              <div>
+                <div class="label" style="margin-bottom:5px">Dificultad</div>
+                <select id="inp-diff">
+                  <option value="easy">Fácil (10 pts)</option>
+                  <option value="mid" selected>Media (15 pts)</option>
+                  <option value="hard">Difícil (20 pts)</option>
+                </select>
+              </div>
+              <div>
+                <div class="label" style="margin-bottom:5px">Puntos custom</div>
+                <input type="number" id="inp-pts" placeholder="Auto" />
+              </div>
+            </div>
+            <div>
+              <div class="label" style="margin-bottom:5px">Imagen (opcional)</div>
+              <input type="file" id="inp-img" accept="image/*"
+                class="file-input" onchange="previewImg(this)" />
+              <img id="img-preview" class="img-preview" alt="" />
+            </div>
+            <button class="btn btn--primary" onclick="addQuestion()">+ Agregar pregunta</button>
+          </div>
+        </div>
+        <div id="q-count" class="q-count"></div>
+        <div id="q-list"></div>
+        <p id="q-empty" class="empty-msg">Sin preguntas aún.</p>
+      </div>
+
+      <!-- TAB: Categorías -->
+      <div id="t-cats" style="display:none">
+        <div class="card">
+          <div class="label">Nueva categoría</div>
+          <div class="input-row">
+            <input type="text" id="inp-cat-new" placeholder="Nombre de la categoría..."
+              onkeydown="if(event.key==='Enter') addCat()" />
+            <button class="btn btn--cyan btn--sm" onclick="addCat()">+ Agregar</button>
+          </div>
+        </div>
+        <div id="cat-list"></div>
+        <p id="cat-empty" class="empty-msg">
+          Sin categorías. Se crean automáticamente al importar o cargar preguntas.
         </p>
       </div>
 
-      <div class="label">Subir archivo de preguntas</div>
-      <div class="import-zone" id="drop-zone" onclick="document.getElementById('file-inp').click()"
-        ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
-        <div class="import-icon">📂</div>
-        <strong>Hacé clic o arrastrá tu archivo acá</strong>
-        <p>CSV o JSON con las preguntas de la trivia</p>
-        <div class="import-formats">
-          <span class="fmt-pill csv">CSV</span>
-          <span class="fmt-pill json">JSON</span>
-        </div>
+      <div class="setup-footer">
+        <span id="setup-summary" class="setup-summary"></span>
+        <button class="btn btn--primary btn--lg" onclick="startGame()">Iniciar juego →</button>
       </div>
-      <input type="file" id="file-inp" accept=".csv,.json" style="display:none" onchange="handleFileSelect(this)">
-      <div class="import-result" id="import-result"></div>
-
-      <details style="margin-top:16px">
-        <summary style="cursor:pointer;font-size:12px;font-weight:800;color:var(--gris-b);margin-bottom:10px">
-          Ver formato esperado de los archivos ▾
-        </summary>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
-          <div class="card">
-            <div style="font-size:11px;font-weight:900;color:var(--cyan-d);margin-bottom:8px">FORMATO CSV</div>
-            <pre style="font-size:10px;color:var(--texto);background:var(--gris-f);padding:10px;border-radius:6px;overflow-x:auto;line-height:1.5">pregunta,respuesta,explicacion,
-categoria,dificultad,puntos
-
-¿Pregunta?,Respuesta,
-Explicación pedagógica,
-Categoría,easy,10</pre>
-            <p style="font-size:10px;color:var(--gris-b);margin-top:6px">
-              <strong>dificultad:</strong> easy / mid / hard<br>
-              <strong>puntos:</strong> dejar vacío = automático
-            </p>
-          </div>
-          <div class="card">
-            <div style="font-size:11px;font-weight:900;color:var(--naranja-d);margin-bottom:8px">FORMATO JSON</div>
-            <pre style="font-size:10px;color:var(--texto);background:var(--gris-f);padding:10px;border-radius:6px;overflow-x:auto;line-height:1.5">[
-  {
-    "pregunta": "¿...?",
-    "respuesta": "...",
-    "explicacion": "...",
-    "categoria": "...",
-    "dificultad": "mid",
-    "puntos": 15
-  }
-]</pre>
-          </div>
-        </div>
-        <div style="margin-top:10px;text-align:center">
-          <button class="btn btn-outline btn-sm" onclick="downloadTemplate('csv')">⬇ Descargar plantilla CSV</button>
-          <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="downloadTemplate('json')">⬇ Descargar plantilla JSON</button>
-        </div>
-      </details>
-    </div>
-
-    <!-- TAB PREGUNTAS MANUALES -->
-    <div id="t-questions" style="display:none">
-      <div class="card" style="margin-bottom:16px">
-        <div class="label">Nueva pregunta</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <textarea id="inp-q" placeholder="Escribí la pregunta..."></textarea>
-          <input type="text" id="inp-ans" placeholder="Respuesta correcta (visible solo para el moderador)">
-          <input type="text" id="inp-explain" placeholder="Explicación pedagógica (aparece al revelar respuesta)">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-            <div>
-              <div class="label" style="margin-bottom:5px">Categoría</div>
-              <select id="inp-cat"><option value="">Sin categoría</option></select>
-            </div>
-            <div>
-              <div class="label" style="margin-bottom:5px">Dificultad</div>
-              <select id="inp-diff">
-                <option value="easy">Fácil (10 pts)</option>
-                <option value="mid" selected>Media (15 pts)</option>
-                <option value="hard">Difícil (20 pts)</option>
-              </select>
-            </div>
-            <div>
-              <div class="label" style="margin-bottom:5px">Puntos custom</div>
-              <input type="number" id="inp-pts" placeholder="Auto">
-            </div>
-          </div>
-          <div>
-            <div class="label" style="margin-bottom:5px">Imagen (opcional)</div>
-            <input type="file" id="inp-img" accept="image/*" style="font-size:12px;color:var(--gris-b)"
-              onchange="previewImg(this)">
-            <img id="img-preview" style="display:none;max-height:80px;margin-top:7px;border-radius:7px;object-fit:cover">
-          </div>
-          <button class="btn btn-naranja" onclick="addQuestion()">+ Agregar pregunta</button>
-        </div>
-      </div>
-      <div id="q-count" style="font-size:12px;font-weight:800;color:var(--gris-b);margin-bottom:8px"></div>
-      <div id="q-list"></div>
-      <p id="q-empty" style="text-align:center;color:var(--gris-b);font-size:13px;padding:20px">Sin preguntas aún.</p>
-    </div>
-
-    <!-- TAB CATEGORÍAS -->
-    <div id="t-cats" style="display:none">
-      <div class="card">
-        <div class="label">Nueva categoría</div>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="inp-cat-new" placeholder="Nombre de la categoría..."
-            onkeydown="if(event.key==='Enter')addCat()">
-          <button class="btn btn-cyan btn-sm" onclick="addCat()">+ Agregar</button>
-        </div>
-      </div>
-      <div id="cat-list"></div>
-      <p id="cat-empty" style="color:var(--gris-b);font-size:12px;padding:10px 0">
-        Sin categorías. Se crean automáticamente al importar o cargar preguntas.
-      </p>
-    </div>
-
-    <div style="margin-top:24px;display:flex;justify-content:flex-end;gap:10px;align-items:center">
-      <span id="setup-summary" style="font-size:12px;color:var(--gris-b);font-weight:700"></span>
-      <button class="btn btn-naranja" onclick="startGame()" style="font-size:14px;padding:12px 24px">
-        Iniciar juego →
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ GAME ═══ -->
-<div id="screen-game" class="screen">
-  <div class="game-header">
-    <div class="game-brand">Trivia OAJNU</div>
-    <div class="q-counter-wrap">
-      <div class="q-counter-num" id="g-qnum">1</div>
-      <div class="q-counter-lbl" id="g-qtotal">de 0 preguntas</div>
-    </div>
-    <div class="game-actions">
-      <button class="btn btn-white btn-sm" onclick="window.open(location.href.split('?')[0].split('#')[0]+'#audience','trivia-publico','width=1280,height=720')">Pantalla pública ↗</button>
-      <button class="btn btn-white-outline btn-sm" onclick="viewScoreboard()">Ranking</button>
-      <button class="btn btn-white-outline btn-sm" onclick="confirmEnd()">Finalizar</button>
     </div>
   </div>
 
-  <div class="game-body">
-    <div class="question-panel">
-      <!-- TIMER -->
-      <div class="timer-card">
-        <div class="timer-top">
-          <span class="label">Temporizador</span>
-          <span class="timer-status" id="timer-status">En espera</span>
-        </div>
-        <div class="timer-bar"><div class="timer-fill" id="t-fill" style="width:100%"></div></div>
-        <div class="timer-num" id="t-num">—</div>
+  <!-- ══ GAME ══ -->
+  <div id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="game-header__brand">Trivia OAJNU</div>
+      <div class="game-header__counter">
+        <div class="game-header__counter-num" id="g-qnum">1</div>
+        <div class="game-header__counter-lbl" id="g-qtotal">de 0 preguntas</div>
       </div>
-
-      <!-- QUESTION -->
-      <div class="q-card">
-        <div class="q-card-meta" id="q-meta-bar">
-          <span class="badge badge-cat">PREGUNTA</span>
-        </div>
-        <div class="q-card-text" id="q-main">Presioná "Siguiente" para comenzar.</div>
-        <img id="q-img" class="q-card-img">
-        <div class="q-card-ans" id="q-ans"></div>
-        <div class="q-card-exp" id="q-explain"></div>
+      <div class="game-header__actions">
+        <button class="btn btn--white btn--sm" id="btn-open-public">Pantalla pública ↗</button>
+        <button class="btn btn--ghost btn--sm" onclick="viewScoreboard()">Ranking</button>
+        <button class="btn btn--ghost btn--sm" onclick="openModal('modal-end')">Finalizar</button>
       </div>
-
-      <!-- BUZZED -->
-      <div class="buzzed-card" id="buzzed-box">
-        <div class="buzzed-lbl">Respondió primero</div>
-        <div class="buzzed-name" id="buzzed-name">—</div>
-      </div>
-
-      <!-- JUDGE -->
-      <div class="judge-row" id="judge-btns" style="display:none">
-        <button class="btn btn-success" onclick="judge(true)">✓ Correcto (<span id="pts-lbl">10</span> pts)</button>
-        <button class="btn btn-danger" onclick="judge(false)">✗ Incorrecto (−5 pts)</button>
-      </div>
-
-      <!-- CONTROLS -->
-      <div class="controls-row">
-        <button class="btn btn-outline btn-sm" id="btn-timer" onclick="toggleTimer()">▶ Iniciar timer</button>
-        <button class="btn btn-outline btn-sm" onclick="revealAns()">Ver respuesta</button>
-        <button class="btn btn-naranja btn-sm" onclick="nextQ()">Siguiente pregunta →</button>
-      </div>
-
-      <!-- COMODIN -->
-      <div id="comodin-area" style="display:none">
-        <button class="comodin-btn" id="btn-joker" onclick="useJoker()">
-          <span style="font-size:16px">💡</span>
-          <span id="joker-label">Comodín: Pedir ayuda al grupo</span>
-          <span id="joker-count" style="margin-left:auto;font-size:10px;font-weight:700;color:#7b1fa2"></span>
-        </button>
-      </div>
-
-      <div class="label">¿Quién respondió primero?</div>
-      <div class="buzzer-grid" id="buzzer-grid"></div>
     </div>
 
-    <!-- SCOREBOARD -->
-    <div class="score-panel">
-      <div class="score-head">
-        <h3>Marcador</h3>
+    <div class="game-body">
+      <div class="game-body__main">
+
+        <div class="timer-card">
+          <div class="timer-card__header">
+            <span class="label">Temporizador</span>
+            <span class="timer-card__status" id="timer-status">En espera</span>
+          </div>
+          <div class="timer-bar">
+            <div class="timer-bar__fill" id="t-fill" style="width:100%"></div>
+          </div>
+          <div class="timer-card__num" id="t-num">—</div>
+        </div>
+
+        <div class="q-card">
+          <div class="q-card__meta" id="q-meta-bar">
+            <span class="badge badge--cat">PREGUNTA</span>
+          </div>
+          <div class="q-card__text" id="q-main">Presioná "Siguiente" para comenzar.</div>
+          <img id="q-img" class="q-card__img" alt="" />
+          <div class="q-card__ans" id="q-ans"></div>
+          <div class="q-card__exp" id="q-explain"></div>
+        </div>
+
+        <div class="buzzed-card" id="buzzed-box">
+          <div class="buzzed-card__label">Respondió primero</div>
+          <div class="buzzed-card__name" id="buzzed-name">—</div>
+        </div>
+
+        <div class="judge-row" id="judge-btns" style="display:none">
+          <button class="btn btn--ok" onclick="judge(true)">
+            ✓ Correcto (<span id="pts-lbl">10</span> pts)
+          </button>
+          <button class="btn btn--error" onclick="judge(false)">✗ Incorrecto (−5 pts)</button>
+        </div>
+
+        <div class="controls-row">
+          <button class="btn btn--outline btn--sm" id="btn-timer" onclick="toggleTimer()">
+            ▶ Iniciar timer
+          </button>
+          <button class="btn btn--outline btn--sm" onclick="revealAnswer()">Ver respuesta</button>
+          <button class="btn btn--primary btn--sm" onclick="nextQuestion()">
+            Siguiente pregunta →
+          </button>
+        </div>
+
+        <div id="comodin-area" style="display:none">
+          <button class="comodin-btn" id="btn-joker" onclick="useJoker()">
+            <span class="comodin-btn__icon">💡</span>
+            <span>Comodín: Pedir ayuda al grupo</span>
+            <span id="joker-count" class="comodin-btn__count"></span>
+          </button>
+        </div>
+
+        <div class="label">¿Quién respondió primero?</div>
+        <div class="buzzer-grid" id="buzzer-grid"></div>
       </div>
-      <div class="score-list" id="score-list"></div>
+
+      <div class="game-body__score">
+        <div class="score-panel__header"><h3>Marcador</h3></div>
+        <div class="score-list" id="score-list"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ═══ PANTALLA PÚBLICA ═══ -->
+  <!-- ══ FINAL ══ -->
+  <div id="screen-final" class="screen">
+    <div class="app-header">
+      <div class="oajnu-dot">OAJ</div>
+      <div>
+        <div class="brand">Resultados finales</div>
+        <div class="subbrand">Trivia · OAJNU</div>
+      </div>
+    </div>
+    <div class="final-tabs">
+      <div class="final-tab active" data-final-tab="ft-podium">Podio</div>
+      <div class="final-tab"        data-final-tab="ft-stats">Estadísticas</div>
+      <div class="final-tab"        data-final-tab="ft-cats">Por categoría</div>
+    </div>
+    <div class="final-content">
+      <div id="ft-podium"></div>
+      <div id="ft-stats"  style="display:none"></div>
+      <div id="ft-cats"   style="display:none"></div>
+      <div class="final-actions" id="final-actions">
+        <button class="btn btn--outline" id="btn-export"
+          onclick="exportResults()" style="display:none">⬇ Exportar resultados</button>
+        <button class="btn btn--primary" onclick="resetGame()">Nueva partida</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- ══ PANTALLA PÚBLICA — fuera de #app ══ -->
 <div id="screen-public">
   <div class="pub-header">
     <div class="pub-brand">OAJNU · Trivia</div>
     <div class="pub-qnum" id="pub-qnum">—</div>
   </div>
-  <div style="margin-top:40px"></div>
-  <div class="pub-meta" id="pub-meta">ESPERANDO PREGUNTA</div>
+  <div class="pub-spacer"></div>
+  <div class="pub-meta"     id="pub-meta">ESPERANDO PREGUNTA</div>
   <div class="pub-question" id="pub-q">—</div>
-  <img id="pub-img" class="pub-img">
-  <div class="pub-timer" id="pub-tnum">—</div>
-  <div class="pub-bar"><div class="pub-bar-fill" id="pub-bfill" style="width:100%"></div></div>
-  <div class="pub-scores" id="pub-scores"></div>
-  <div id="pub-buzzed" style="display:none;margin-top:20px;padding:14px 28px;border-radius:12px;border:2px solid var(--naranja);font-size:22px;font-weight:900;color:var(--blanco);letter-spacing:1px"></div>
-  <button class="pub-back" onclick="closePublic()">← Panel</button>
+  <img id="pub-img" class="pub-img" alt="" />
+  <div class="pub-timer"    id="pub-tnum">—</div>
+  <div class="pub-bar">
+    <div class="pub-bar__fill" id="pub-bfill" style="width:100%"></div>
+  </div>
+  <div class="pub-scores"  id="pub-scores"></div>
+  <div class="pub-buzzed"  id="pub-buzzed"></div>
 </div>
 
-<!-- ═══ FINAL ═══ -->
-<div id="screen-final" class="screen">
-  <div class="app-header">
-    <div class="oajnu-dot">OAJ</div>
-    <div><div class="brand">Resultados finales</div><div class="subbrand">Trivia · OAJNU</div></div>
-  </div>
-  <div class="final-tabs">
-    <div class="final-tab active" onclick="switchFinalTab('ft-podium')">Podio</div>
-    <div class="final-tab" onclick="switchFinalTab('ft-stats')">Estadísticas</div>
-    <div class="final-tab" onclick="switchFinalTab('ft-cats')">Por categoría</div>
-  </div>
-  <div class="final-content">
-    <div id="ft-podium"></div>
-    <div id="ft-stats" style="display:none"></div>
-    <div id="ft-cats" style="display:none"></div>
-    <div style="display:flex;gap:10px;margin-top:24px;justify-content:center;flex-wrap:wrap">
-      <button class="btn btn-outline" id="btn-export" onclick="exportResults()" style="display:none">⬇ Exportar resultados</button>
-      <button class="btn btn-naranja" onclick="resetGame()">Nueva partida</button>
-    </div>
-  </div>
-</div>
-
-</div><!-- #app -->
-
-<!-- MODALES -->
+<!-- ══ MODALES — fuera de #app para z-index limpio ══ -->
 <div class="modal-overlay" id="modal-end">
   <div class="modal-box">
     <h3>¿Terminar el juego?</h3>
     <p>Se mostrarán los resultados finales. Esta acción no se puede deshacer.</p>
-    <div class="modal-btns">
-      <button class="btn btn-outline" onclick="closeModal('modal-end')">Cancelar</button>
-      <button class="btn btn-naranja" onclick="endGame()">Finalizar</button>
+    <div class="modal-box__btns">
+      <button class="btn btn--outline" onclick="closeModal('modal-end')">Cancelar</button>
+      <button class="btn btn--primary" onclick="endGame()">Finalizar</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="modal-joker">
   <div class="modal-box">
-    <h3 style="color:#7b1fa2">💡 Comodín activado</h3>
-    <p id="joker-msg">El equipo puede consultar con su grupo durante 30 segundos. El timer permanece pausado.</p>
-    <div class="modal-btns">
-      <button class="btn btn-naranja" onclick="closeModal('modal-joker')">Entendido</button>
+    <h3 class="modal-box__title--purple">💡 Comodín activado</h3>
+    <p id="joker-msg">
+      El equipo puede consultar con su grupo durante 30 segundos.
+      El timer permanece pausado.
+    </p>
+    <div class="modal-box__btns">
+      <button class="btn btn--primary" onclick="closeModal('modal-joker')">Entendido</button>
     </div>
   </div>
 </div>
 
-<script>
-/* ══════════════════════════════════════
-   FIREBASE — sincronización en tiempo real
-   • #audience  → pantalla pública (solo lectura)
-   • sin hash   → moderador (lee + escribe)
-   Reemplaza completamente BroadcastChannel.
-══════════════════════════════════════ */
-
-// ── Configuración Firebase (completar con tus datos) ──
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBrEkdO1zUNzarBPjXLNYC8Iw5YXuehyKg",
-  authDomain: "trivaapp-oajnu.firebaseapp.com",
-  databaseURL: "https://trivaapp-oajnu-default-rtdb.firebaseio.com",
-  projectId: "trivaapp-oajnu",
-  storageBucket: "trivaapp-oajnu.firebasestorage.app",
-  messagingSenderId: "556848845323",
-  appId: "1:556848845323:web:a80fd25762680cdcdb6d0e",
-  measurementId: "G-LRVBY5M089"
-};
-
-const FB_PATH = 'trivia/estado'; // nodo en Realtime Database
-
-// Detección de rol
-const IS_AUDIENCE = location.hash.includes('audience');
-
-// SDK Firebase (cargado dinámicamente para mantener todo en un solo archivo)
-let fbDatabase = null;
-let fbRef      = null;
-
-function initFirebase() {
-  return new Promise((resolve) => {
-    // Cargar Firebase App + Database via CDN
-    const scripts = [
-      'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
-      'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js'
-    ];
-    let loaded = 0;
-    scripts.forEach(src => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = () => { if (++loaded === scripts.length) resolve(); };
-      document.head.appendChild(s);
-    });
-  });
-}
-
-async function setupFirebase() {
-  await initFirebase();
-  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-  fbDatabase = firebase.database();
-  fbRef      = fbDatabase.ref(FB_PATH);
-
-  if (IS_AUDIENCE) {
-    // ── MODO AUDIENCIA: escuchar cambios en tiempo real ──
-    document.documentElement.classList.add('is-audience');
-    document.title = 'Trivia OAJNU · Pantalla Pública';
-    const backBtn = document.querySelector('.pub-back');
-    if (backBtn) backBtn.style.display = 'none';
-    document.getElementById('pub-q').textContent   = 'Esperando al moderador...';
-    document.getElementById('pub-tnum').textContent = '—';
-
-    fbRef.on('value', snap => {
-      const d = snap.val();
-      if (d) renderAudienceState(d);
-    });
-
-  } else {
-    // ── MODO MODERADOR: nada extra, broadcastState() escribe a Firebase ──
-    // Si hay una sesión activa en Firebase, la ignoramos (moderador siempre manda)
-  }
-}
-
-// Escribe el estado del juego a Firebase (solo moderador)
-function broadcastState() {
-  if (IS_AUDIENCE || !fbRef) return;
-  const payload = {
-    currentQ:      G.currentQ,
-    questions:     G.questions,
-    teams:         G.teams,
-    scores:        G.scores,
-    timerLeft:     G.timerLeft,
-    timerDuration: G.timerDuration,
-    timerRunning:  G.timerRunning,
-    buzzedTeam:    G.buzzedTeam || null,
-    gameStarted:   G.gameStarted || false
-  };
-  fbRef.set(payload).catch(err => console.warn('Firebase write error:', err));
-}
-
-// Compatibilidad: requestState ya no es necesaria con Firebase (el listener on('value') 
-// entrega el estado actual inmediatamente al conectarse)
-function requestState() {}
-
-// Inicializar Firebase al cargar la página
-setupFirebase();
-
-/* ══════════════════════════════════════
-   CONSTANTES
-══════════════════════════════════════ */
-const SEDES = [
-  "Buenos Aires","Córdoba","Corrientes","Chaco","Rosario","Mendoza","Tucumán","Salta"
-];
-// Colores institucionales + soporte
-const COLORS = [
-  "#E05206","#009AA6","#c0392b","#16a085","#8e44ad","#d35400","#27ae60"
-];
-const DIFF_PTS  = { easy:10, mid:15, hard:20 };
-const DIFF_LBL  = { easy:"Fácil", mid:"Media", hard:"Difícil" };
-const DIFF_CLASS= { easy:"badge-easy", mid:"badge-mid", hard:"badge-hard" };
-
-/* ══════════════════════════════════════
-   ESTADO
-══════════════════════════════════════ */
-let G = newState();
-function newState() {
-  return {
-    mode:'grupos', teams:[], questions:[], cats:[],
-    timerDuration:30, jokersPerTeam:1,
-    currentQ:-1, scores:{}, correct:{}, wrong:{}, jokers:{}, catScores:{},
-    timerInterval:null, timerRunning:false, timerLeft:30,
-    buzzedTeam:null, judged:false, imgData:null, history:[],
-    gameStarted:false
-  };
-}
-
-/* ══════════════════════════════════════
-   SETUP — TABS
-══════════════════════════════════════ */
-function switchTab(id) {
-  const ids = ['t-mode','t-import','t-questions','t-cats'];
-  ids.forEach((t,i) => {
-    document.getElementById(t).style.display = t===id?'block':'none';
-    document.querySelectorAll('.tab')[i].classList.toggle('active', t===id);
-  });
-  updateSummary();
-}
-
-function updateSummary() {
-  const teams = G.mode==='sedes'
-    ? [...document.querySelectorAll('#sedes-wrap input:checked')].length
-    : G.teams.length;
-  const qs = G.questions.length;
-  document.getElementById('setup-summary').textContent =
-    `${teams} equipo${teams!==1?'s':''} · ${qs} pregunta${qs!==1?'s':''}`;
-}
-
-/* ══════════════════════════════════════
-   SETUP — MODO
-══════════════════════════════════════ */
-function selMode(m) {
-  G.mode = m;
-  document.getElementById('mc-grupos').classList.toggle('selected', m==='grupos');
-  document.getElementById('mc-sedes').classList.toggle('selected', m==='sedes');
-  document.getElementById('cfg-grupos').style.display = m==='grupos'?'block':'none';
-  document.getElementById('cfg-sedes').style.display  = m==='sedes'?'block':'none';
-  updateSummary();
-}
-
-function renderSedes() {
-  document.getElementById('sedes-wrap').innerHTML = SEDES.map(s=>`
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--blanco);border:1.5px solid var(--gris-m);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;font-weight:700">
-      <input type="checkbox" value="${s}" style="width:auto;accent-color:var(--naranja)" onchange="updateSummary()"> ${s}
-    </label>`).join('');
-}
-
-function addTeam() {
-  const v = document.getElementById('inp-team').value.trim();
-  if (!v || G.teams.length>=7) return;
-  if (G.teams.find(t=>t.name===v)) { alert('Nombre duplicado'); return; }
-  G.teams.push({ name:v, color:COLORS[G.teams.length%COLORS.length] });
-  document.getElementById('inp-team').value = '';
-  renderTeamList(); updateSummary();
-}
-function removeTeam(i) { G.teams.splice(i,1); renderTeamList(); updateSummary(); }
-function renderTeamList() {
-  document.getElementById('team-list').innerHTML = G.teams.map((t,i)=>`
-    <div class="team-item">
-      <div class="team-dot" style="background:${t.color}"></div>
-      <span>${t.name}</span>
-      <button onclick="removeTeam(${i})">×</button>
-    </div>`).join('') ||
-    '<p style="color:var(--gris-b);font-size:12px;padding:8px 0">Sin equipos agregados.</p>';
-}
-
-/* ══════════════════════════════════════
-   SETUP — CATEGORÍAS
-══════════════════════════════════════ */
-function addCat() {
-  const v = document.getElementById('inp-cat-new').value.trim();
-  if (!v) return;
-  if (!G.cats.includes(v)) G.cats.push(v);
-  document.getElementById('inp-cat-new').value = '';
-  renderCatList(); syncCatSelect();
-}
-function removeCat(i) { G.cats.splice(i,1); renderCatList(); syncCatSelect(); }
-function renderCatList() {
-  const el = document.getElementById('cat-list');
-  const em = document.getElementById('cat-empty');
-  if (!G.cats.length) { el.innerHTML=''; em.style.display='block'; return; }
-  em.style.display='none';
-  el.innerHTML = G.cats.map((c,i)=>`
-    <div class="team-item">
-      <span class="badge badge-cat">${c}</span>
-      <span style="flex:1;margin-left:8px">${c}</span>
-      <button onclick="removeCat(${i})">×</button>
-    </div>`).join('');
-}
-function syncCatSelect() {
-  document.getElementById('inp-cat').innerHTML =
-    '<option value="">Sin categoría</option>' +
-    G.cats.map(c=>`<option value="${c}">${c}</option>`).join('');
-}
-function ensureCat(cat) {
-  if (cat && !G.cats.includes(cat)) { G.cats.push(cat); syncCatSelect(); renderCatList(); }
-}
-
-/* ══════════════════════════════════════
-   SETUP — PREGUNTAS MANUALES
-══════════════════════════════════════ */
-function previewImg(inp) {
-  const f = inp.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = e => {
-    G.imgData = e.target.result;
-    const p = document.getElementById('img-preview');
-    p.src = G.imgData; p.style.display = 'block';
-  };
-  r.readAsDataURL(f);
-}
-
-function addQuestion(q) {
-  if (!q) {
-    const text = document.getElementById('inp-q').value.trim();
-    if (!text) return;
-    const diff = document.getElementById('inp-diff').value;
-    const custom = parseInt(document.getElementById('inp-pts').value);
-    const pts = isNaN(custom) ? DIFF_PTS[diff] : custom;
-    const cat = document.getElementById('inp-cat').value;
-    const ans = document.getElementById('inp-ans').value.trim();
-    const explain = document.getElementById('inp-explain').value.trim();
-    ensureCat(cat);
-    q = { text, ans, explain, diff, pts, cat, img: G.imgData||null };
-    G.imgData = null;
-    ['inp-q','inp-ans','inp-explain','inp-pts'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('inp-img').value = '';
-    document.getElementById('img-preview').style.display = 'none';
-  }
-  G.questions.push(q);
-  renderQuestions(); updateSummary();
-}
-
-function removeQ(i) { G.questions.splice(i,1); renderQuestions(); updateSummary(); }
-function renderQuestions() {
-  const el = document.getElementById('q-list');
-  const em = document.getElementById('q-empty');
-  const cnt = document.getElementById('q-count');
-  if (!G.questions.length) { el.innerHTML=''; em.style.display='block'; cnt.textContent=''; return; }
-  em.style.display = 'none';
-  cnt.textContent = `${G.questions.length} pregunta${G.questions.length!==1?'s':', 1 pregunta'} cargada${G.questions.length!==1?'s':''}`;
-  el.innerHTML = G.questions.map((q,i)=>`
-    <div class="q-item">
-      <div class="q-meta">
-        <span style="font-size:10px;font-weight:900;color:var(--naranja)">P${i+1}</span>
-        <span class="badge ${DIFF_CLASS[q.diff]||'badge-easy'}">${DIFF_LBL[q.diff]||q.diff}</span>
-        ${q.cat?`<span class="badge badge-cat">${q.cat}</span>`:''}
-        <span class="badge badge-pts">${q.pts} pts</span>
-      </div>
-      <div class="q-text-d">${q.text}</div>
-      ${q.ans?`<div class="q-ans-d">✓ ${q.ans}</div>`:''}
-      ${q.explain?`<div class="q-exp-d">${q.explain}</div>`:''}
-      ${q.img?`<img class="q-img-th" src="${q.img}">`:''}
-      <button class="q-delete" onclick="removeQ(${i})">×</button>
-    </div>`).join('');
-}
-
-/* ══════════════════════════════════════
-   IMPORT — CSV / JSON
-══════════════════════════════════════ */
-function dragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
-function dragLeave(e) { document.getElementById('drop-zone').classList.remove('dragover'); }
-function dropFile(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
-}
-function handleFileSelect(inp) {
-  if (inp.files[0]) processFile(inp.files[0]);
-}
-
-function processFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      let imported = [];
-      if (ext === 'json') {
-        imported = parseJSON(e.target.result);
-      } else if (ext === 'csv') {
-        imported = parseCSV(e.target.result);
-      } else {
-        showImportMsg('Formato no soportado. Usá CSV o JSON.', true); return;
-      }
-      if (!imported.length) { showImportMsg('No se encontraron preguntas válidas en el archivo.', true); return; }
-      imported.forEach(q => {
-        ensureCat(q.cat);
-        G.questions.push(q);
-      });
-      renderQuestions(); updateSummary();
-      showImportMsg(`✓ ${imported.length} pregunta${imported.length!==1?'s':''} importada${imported.length!==1?'s':''} correctamente desde "${file.name}".`, false);
-      switchTab('t-questions');
-    } catch(err) {
-      showImportMsg('Error al procesar el archivo: ' + err.message, true);
-    }
-  };
-  reader.readAsText(file, 'UTF-8');
-}
-
-function showImportMsg(msg, isError) {
-  const el = document.getElementById('import-result');
-  el.textContent = msg;
-  el.className = 'import-result' + (isError?' import-error':'');
-  el.style.display = 'block';
-  setTimeout(() => el.style.display='none', 6000);
-}
-
-function parseJSON(text) {
-  const data = JSON.parse(text);
-  const arr = Array.isArray(data) ? data : (data.preguntas || data.questions || []);
-  return arr.map(normalizeQ).filter(q=>q.text);
-}
-
-function parseCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l=>l.trim());
-  if (!lines.length) return [];
-  // Detect header
-  const firstLow = lines[0].toLowerCase();
-  const hasHeader = firstLow.includes('pregunta') || firstLow.includes('question') || firstLow.includes('texto');
-  const dataLines = hasHeader ? lines.slice(1) : lines;
-  return dataLines.map(line => {
-    const cols = splitCSVLine(line);
-    return normalizeQ({
-      pregunta:    cols[0]||'',
-      respuesta:   cols[1]||'',
-      explicacion: cols[2]||'',
-      categoria:   cols[3]||'',
-      dificultad:  cols[4]||'mid',
-      puntos:      cols[5]||''
-    });
-  }).filter(q=>q.text);
-}
-
-function splitCSVLine(line) {
-  const result = []; let cur = ''; let inQ = false;
-  for (let i=0; i<line.length; i++) {
-    const c = line[i];
-    if (c==='"') { inQ=!inQ; }
-    else if (c===',' && !inQ) { result.push(cur.trim()); cur=''; }
-    else { cur+=c; }
-  }
-  result.push(cur.trim());
-  return result;
-}
-
-function normalizeQ(raw) {
-  const text = (raw.pregunta||raw.question||raw.texto||raw.text||'').trim();
-  const ans  = (raw.respuesta||raw.answer||raw.ans||'').trim();
-  const exp  = (raw.explicacion||raw.explanation||raw.explain||'').trim();
-  const cat  = (raw.categoria||raw.category||raw.cat||'').trim();
-  const rawDiff = (raw.dificultad||raw.difficulty||raw.diff||'mid').toString().toLowerCase().trim();
-  const diff = rawDiff==='fácil'||rawDiff==='facil'||rawDiff==='easy' ? 'easy'
-             : rawDiff==='difícil'||rawDiff==='dificil'||rawDiff==='hard' ? 'hard'
-             : 'mid';
-  const rawPts = parseInt(raw.puntos||raw.points||raw.pts||'');
-  const pts = isNaN(rawPts) ? DIFF_PTS[diff] : rawPts;
-  return { text, ans, explain:exp, cat, diff, pts, img:null };
-}
-
-function downloadTemplate(fmt) {
-  let content, filename, type;
-  if (fmt==='csv') {
-    content = 'pregunta,respuesta,explicacion,categoria,dificultad,puntos\n' +
-      '¿En qué año fue fundada la ONU?,1945,Fundada el 24 de octubre de 1945 tras la Segunda Guerra Mundial.,Historia,easy,\n' +
-      '¿Cuántos países miembros tiene la ONU?,193,193 estados miembros. El último fue Sudán del Sur en 2011.,Institucional,mid,\n' +
-      '¿Qué significa ODS?,Objetivos de Desarrollo Sostenible,17 objetivos adoptados en 2015 como parte de la Agenda 2030.,Agenda 2030,hard,20\n';
-    filename = 'plantilla_trivia_cmis.csv'; type = 'text/csv';
-  } else {
-    content = JSON.stringify([
-      { pregunta:"¿En qué año fue fundada la ONU?", respuesta:"1945", explicacion:"Fundada el 24 de octubre de 1945 tras la Segunda Guerra Mundial.", categoria:"Historia", dificultad:"easy", puntos:10 },
-      { pregunta:"¿Cuántos países miembros tiene la ONU?", respuesta:"193", explicacion:"193 estados miembros. El último fue Sudán del Sur en 2011.", categoria:"Institucional", dificultad:"mid", puntos:15 }
-    ], null, 2);
-    filename = 'plantilla_trivia_cmis.json'; type = 'application/json';
-  }
-  const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename; a.click();
-}
-
-/* ══════════════════════════════════════
-   GAME START
-══════════════════════════════════════ */
-function startGame() {
-  if (G.mode==='sedes') {
-    const checked = [...document.querySelectorAll('#sedes-wrap input:checked')];
-    if (checked.length<2) { alert('Seleccioná al menos 2 sedes.'); return; }
-    G.teams = checked.map((c,i)=>({ name:c.value, color:COLORS[i%COLORS.length] }));
-  } else {
-    if (G.teams.length<2) { alert('Agregá al menos 2 equipos.'); return; }
-  }
-  if (!G.questions.length) { alert('Agregá o importá al menos una pregunta.'); return; }
-
-  G.timerDuration  = parseInt(document.getElementById('inp-timer').value);
-  G.jokersPerTeam  = parseInt(document.getElementById('inp-jokers').value);
-  G.scores={}; G.correct={}; G.wrong={}; G.jokers={}; G.catScores={}; G.history=[];
-  G.teams.forEach(t => {
-    G.scores[t.name]=0; G.correct[t.name]=0; G.wrong[t.name]=0;
-    G.jokers[t.name]=G.jokersPerTeam;
-    G.catScores[t.name]={};
-    G.cats.forEach(c=>G.catScores[t.name][c]=0);
-  });
-  G.currentQ = -1;
-  G.gameStarted = true;
-  showScreen('screen-game');
-  document.getElementById('g-qtotal').textContent = 'de '+G.questions.length+' preguntas';
-  renderScoreboard(); renderBuzzerGrid(); nextQ();
-}
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-public').style.display = 'none';
-  document.getElementById(id).classList.add('active');
-}
-
-/* ══════════════════════════════════════
-   GAME LOGIC
-══════════════════════════════════════ */
-function renderBuzzerGrid() {
-  document.getElementById('buzzer-grid').innerHTML = G.teams.map(t=>`
-    <button class="buzzer-btn" onclick="buzz('${t.name.replace(/'/g,"\\'")}')">
-      <div class="bz-dot" style="background:${t.color}"></div>
-      <span>${t.name}</span>
-    </button>`).join('');
-}
-
-function buzz(name) {
-  if (G.buzzedTeam||G.judged) return;
-  G.buzzedTeam = name;
-  pauseTimer();
-  const t = G.teams.find(t=>t.name===name);
-  const box = document.getElementById('buzzed-box');
-  document.getElementById('buzzed-name').textContent = name;
-  box.classList.add('active');
-  if (t) { box.style.borderColor=t.color; box.style.background=t.color+'18'; }
-  document.getElementById('judge-btns').style.display = 'flex';
-  document.getElementById('pts-lbl').textContent = G.questions[G.currentQ]?.pts||10;
-  if (G.jokersPerTeam>0) {
-    const left = G.jokers[name]||0;
-    document.getElementById('comodin-area').style.display = 'block';
-    document.getElementById('joker-count').textContent = `(${left} restante${left!==1?'s':''})`;
-    document.getElementById('btn-joker').disabled = left<=0;
-  }
-  playSound('buzz');
-  syncPublic();
-  broadcastState();
-}
-
-function judge(correct) {
-  if (G.judged) return;
-  const name = G.buzzedTeam; if (!name) return;
-  G.judged = true;
-  const q = G.questions[G.currentQ];
-  const delta = correct ? q.pts : -5;
-  G.scores[name] = (G.scores[name]||0) + delta;
-  if (correct) {
-    G.correct[name]++;
-    if (q.cat) G.catScores[name][q.cat]=(G.catScores[name][q.cat]||0)+delta;
-  } else { G.wrong[name]++; }
-  G.history.push({q:G.currentQ, team:name, correct, delta});
-  showDelta(name, delta); renderScoreboard(); syncPublic(); broadcastState();
-  playSound(correct?'correct':'wrong');
-  document.getElementById('judge-btns').style.display = 'none';
-  document.getElementById('buzzed-box').classList.remove('active');
-  document.getElementById('comodin-area').style.display = 'none';
-  G.buzzedTeam = null;
-  if (correct) { revealAns(); stopTimer(); }
-  else { G.judged=false; resumeTimer(); }
-}
-
-function useJoker() {
-  const name = G.buzzedTeam; if (!name||G.jokers[name]<=0) return;
-  G.jokers[name]--;
-  document.getElementById('joker-count').textContent=`(${G.jokers[name]} restante${G.jokers[name]!==1?'s':''})`;
-  document.getElementById('btn-joker').disabled = G.jokers[name]<=0;
-  document.getElementById('joker-msg').textContent=
-    `${name} usa un comodín. Puede consultar con su grupo durante 30 segundos. El timer permanece pausado.`;
-  document.getElementById('modal-joker').classList.add('active');
-}
-
-function showDelta(name, delta) {
-  document.querySelectorAll('.score-item').forEach(el => {
-    if (el.dataset.team===name) {
-      const d = el.querySelector('.score-delta');
-      d.textContent = (delta>0?'+':'')+delta;
-      d.className = 'score-delta show '+(delta>0?'plus':'minus');
-      setTimeout(()=>d.classList.remove('show'), 2200);
-    }
-  });
-}
-
-function renderScoreboard() {
-  const sorted = [...G.teams].sort((a,b)=>(G.scores[b.name]||0)-(G.scores[a.name]||0));
-  document.getElementById('score-list').innerHTML = sorted.map((t,i)=>`
-    <div class="score-item ${i===0?'first-place':''}" data-team="${t.name}">
-      <div class="score-rank ${i===0?'star':''}">${i===0?'★':i+1}</div>
-      <div class="team-dot" style="background:${t.color}"></div>
-      <div class="score-name">${t.name}</div>
-      <div class="score-pts">${G.scores[t.name]||0}</div>
-      <div class="score-delta"></div>
-    </div>`).join('');
-}
-
-function nextQ() {
-  stopTimer();
-  G.currentQ++; G.buzzedTeam=null; G.judged=false;
-  document.getElementById('buzzed-box').classList.remove('active');
-  document.getElementById('judge-btns').style.display='none';
-  document.getElementById('comodin-area').style.display='none';
-  document.getElementById('q-ans').style.display='none';
-  document.getElementById('q-explain').style.display='none';
-  document.getElementById('q-img').style.display='none';
-  if (G.currentQ>=G.questions.length) { endGame(); return; }
-  const q = G.questions[G.currentQ];
-  document.getElementById('q-main').textContent = q.text;
-  document.getElementById('q-ans').textContent = '✓ '+(q.ans||'(sin respuesta cargada)');
-  document.getElementById('q-explain').textContent = q.explain||'';
-  if (q.img) { document.getElementById('q-img').src=q.img; document.getElementById('q-img').style.display='block'; }
-  const metaBar = document.getElementById('q-meta-bar');
-  metaBar.innerHTML =
-    `<span class="badge ${DIFF_CLASS[q.diff]}">${DIFF_LBL[q.diff]} · ${q.pts} pts</span>` +
-    (q.cat?`<span class="badge badge-cat">${q.cat}</span>`:'');
-  document.getElementById('g-qnum').textContent = G.currentQ+1;
-  resetTimerBar(); playSound('next'); syncPublic(); broadcastState();
-}
-
-function revealAns() {
-  document.getElementById('q-ans').style.display='block';
-  if (G.questions[G.currentQ]?.explain)
-    document.getElementById('q-explain').style.display='block';
-}
-
-/* ══════════════════════════════════════
-   TIMER
-══════════════════════════════════════ */
-function toggleTimer() {
-  if (G.timerRunning) pauseTimer();
-  else if (G.timerLeft===G.timerDuration) startTimerFn();
-  else resumeTimer();
-}
-function startTimerFn() {
-  G.timerLeft=G.timerDuration; G.timerRunning=true;
-  document.getElementById('btn-timer').textContent='⏸ Pausar';
-  document.getElementById('timer-status').textContent='Corriendo';
-  runTimer();
-}
-function resumeTimer() {
-  G.timerRunning=true;
-  document.getElementById('btn-timer').textContent='⏸ Pausar';
-  document.getElementById('timer-status').textContent='Corriendo';
-  runTimer();
-}
-function pauseTimer() {
-  G.timerRunning=false; clearInterval(G.timerInterval);
-  document.getElementById('btn-timer').textContent='▶ Reanudar';
-  document.getElementById('timer-status').textContent='Pausado';
-}
-function stopTimer() {
-  G.timerRunning=false; clearInterval(G.timerInterval);
-  document.getElementById('btn-timer').textContent='▶ Iniciar timer';
-  document.getElementById('timer-status').textContent='En espera';
-}
-function resetTimerBar() { G.timerLeft=G.timerDuration; updateTimerUI(); }
-function runTimer() {
-  clearInterval(G.timerInterval);
-  G.timerInterval = setInterval(()=>{
-    if (G.timerLeft<=0) {
-      stopTimer();
-      document.getElementById('timer-status').textContent='¡Tiempo!';
-      document.getElementById('t-fill').style.width='0%';
-      document.getElementById('t-num').textContent='0';
-      playSound('timeout'); return;
-    }
-    G.timerLeft--; updateTimerUI();
-  },1000);
-}
-function updateTimerUI() {
-  const pct = (G.timerLeft/G.timerDuration)*100;
-  const f = document.getElementById('t-fill');
-  f.style.width = pct+'%';
-  f.className = 'timer-fill'+(pct<30?' danger':pct<60?' warn':'');
-  document.getElementById('t-num').textContent = G.timerLeft;
-  const tn = document.getElementById('pub-tnum');
-  tn.textContent = G.timerLeft;
-  tn.className = 'pub-timer'+(pct<30?' danger':pct<60?' warn':'');
-  const bf = document.getElementById('pub-bfill');
-  bf.style.width = pct+'%';
-  bf.className = 'pub-bar-fill'+(pct<30?' danger':pct<60?' warn':'');
-  broadcastState();
-}
-
-/* ══════════════════════════════════════
-   PUBLIC VIEW
-══════════════════════════════════════ */
-function openPublic() {
-  document.getElementById('screen-game').classList.remove('active');
-  document.getElementById('screen-public').style.display='flex';
-  syncPublic();
-}
-function closePublic() {
-  document.getElementById('screen-public').style.display='none';
-  document.getElementById('screen-game').classList.add('active');
-}
-function syncPublic() {
-  if (G.currentQ<0||G.currentQ>=G.questions.length) return;
-  const q = G.questions[G.currentQ];
-  document.getElementById('pub-qnum').textContent=`Pregunta ${G.currentQ+1} / ${G.questions.length}`;
-  document.getElementById('pub-meta').textContent=
-    (q.cat?q.cat+' · ':'')+DIFF_LBL[q.diff];
-  document.getElementById('pub-q').textContent = q.text;
-  const pi = document.getElementById('pub-img');
-  if (q.img) { pi.src=q.img; pi.style.display='block'; } else { pi.style.display='none'; }
-  document.getElementById('pub-tnum').textContent =
-    (!G.timerRunning&&G.timerLeft===G.timerDuration)?'—':G.timerLeft;
-  const sorted = [...G.teams].sort((a,b)=>(G.scores[b.name]||0)-(G.scores[a.name]||0));
-  document.getElementById('pub-scores').innerHTML = sorted.map(t=>`
-    <div class="pub-score-item">
-      <div class="pub-score-dot" style="background:${t.color}"></div>
-      <span class="pub-score-name">${t.name}</span>
-      <span class="pub-score-pts">${G.scores[t.name]||0}</span>
-    </div>`).join('');
-}
-
-/* ══════════════════════════════════════
-   FINAL
-══════════════════════════════════════ */
-function viewScoreboard() {
-  buildFinal(); showScreen('screen-final');
-  document.getElementById('btn-export').style.display='none';
-  if (!document.getElementById('btn-back-game')) {
-    const b=document.createElement('button');
-    b.id='btn-back-game'; b.className='btn btn-outline'; b.textContent='← Volver al juego';
-    b.onclick=()=>showScreen('screen-game');
-    document.querySelector('#screen-final .final-content div:last-child').prepend(b);
-  }
-}
-function confirmEnd() { document.getElementById('modal-end').classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function endGame() {
-  closeModal('modal-end'); stopTimer();
-  buildFinal(); showScreen('screen-final');
-  document.getElementById('btn-export').style.display='inline-flex';
-  const b=document.getElementById('btn-back-game'); if(b)b.remove();
-}
-
-function switchFinalTab(id) {
-  ['ft-podium','ft-stats','ft-cats'].forEach((t,i)=>{
-    document.getElementById(t).style.display=t===id?'block':'none';
-    document.querySelectorAll('.final-tab')[i].classList.toggle('active',t===id);
-  });
-}
-
-function buildFinal() {
-  const sorted=[...G.teams].sort((a,b)=>(G.scores[b.name]||0)-(G.scores[a.name]||0));
-  const po=sorted.slice(0,3);
-  const order=po.length>=2?[po[1],po[0],po[2]].filter(Boolean):[po[0]];
-  const emojis=po.length>=2?['🥈','🥇','🥉']:['🥇'];
-  const heights=po.length>=2?[110,150,80]:[150];
-
-  document.getElementById('ft-podium').innerHTML=`
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:24px;font-weight:900;color:var(--naranja);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">¡Resultados!</div>
-      <div style="font-size:12px;color:var(--gris-b);font-weight:700;margin-bottom:28px">${G.questions.length} preguntas · Trivia OAJNU</div>
-      <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;height:160px;margin-bottom:28px">
-        ${order.map((t,i)=>`
-          <div style="text-align:center">
-            <div style="width:80px;height:${heights[i]}px;border-radius:10px 10px 0 0;background:${t.color}22;border:3px solid ${t.color};display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font-size:24px">${emojis[i]}</div>
-            <div style="font-size:12px;font-weight:900;color:${t.color};margin-top:7px">${t.name}</div>
-            <div style="font-size:11px;font-weight:700;color:var(--gris-b)">${G.scores[t.name]||0} pts</div>
-          </div>`).join('')}
-      </div>
-      <div style="max-width:380px;margin:0 auto">
-        ${sorted.map((t,i)=>`
-          <div class="podium-row">
-            <div class="pr-rank">${i+1}</div>
-            <div class="pr-dot" style="background:${t.color}"></div>
-            <div class="pr-name">${t.name}</div>
-            <div class="pr-pts">${G.scores[t.name]||0}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-
-  const answered=G.history.length;
-  const correctCount=G.history.filter(h=>h.correct).length;
-  const pct=answered?Math.round(correctCount/answered*100):0;
-  const mf=findMostFailed();
-
-  document.getElementById('ft-stats').innerHTML=`
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num">${G.questions.length}</div><div class="stat-lbl">Preguntas totales</div></div>
-      <div class="stat-card"><div class="stat-num">${pct}%</div><div class="stat-lbl">Tasa de aciertos</div></div>
-      <div class="stat-card"><div class="stat-num">${correctCount}</div><div class="stat-lbl">Respuestas correctas</div></div>
-      <div class="stat-card"><div class="stat-num">${answered-correctCount}</div><div class="stat-lbl">Respuestas incorrectas</div></div>
-    </div>
-    <div class="card" style="margin-bottom:12px">
-      <div class="label" style="margin-bottom:12px">Rendimiento por equipo</div>
-      ${sorted.map(t=>{
-        const c=G.correct[t.name]||0,w=G.wrong[t.name]||0,tot=c+w;
-        const ep=tot?Math.round(c/tot*100):0;
-        return`<div style="margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-            <div class="team-dot" style="background:${t.color}"></div>
-            <span style="font-size:13px;font-weight:800;flex:1">${t.name}</span>
-            <span style="font-size:11px;font-weight:700;color:var(--gris-b)">${c} ✓  ${w} ✗  ${ep}%</span>
-          </div>
-          <div style="height:6px;background:var(--gris-m);border-radius:3px;overflow:hidden">
-            <div style="height:100%;background:${t.color};width:${ep}%;border-radius:3px;transition:width .6s ease"></div>
-          </div>
-        </div>`;}).join('')}
-    </div>
-    ${mf?`<div class="card"><div class="label" style="margin-bottom:6px">Pregunta más fallada</div><p style="font-size:13px;font-weight:700">${mf}</p></div>`:''}`;
-
-  document.getElementById('ft-cats').innerHTML = G.cats.length
-    ? G.cats.map(cat=>{
-        const catQ=G.questions.filter(q=>q.cat===cat);
-        return`<div class="card" style="margin-bottom:10px">
-          <div class="label" style="margin-bottom:10px">${cat} · ${catQ.length} pregunta${catQ.length!==1?'s':''}</div>
-          ${sorted.map(t=>{
-            const pts=G.catScores[t.name]?.[cat]||0;
-            const maxPts=catQ.reduce((s,q)=>s+q.pts,0)||1;
-            const pct2=Math.min(100,Math.round(pts/maxPts*100));
-            return`<div class="cat-row">
-              <div class="team-dot" style="background:${t.color}"></div>
-              <span style="font-size:12px;font-weight:800;width:110px">${t.name}</span>
-              <div class="cat-bar-wrap"><div class="cat-bar-fill" style="width:${pct2}%;background:${t.color}"></div></div>
-              <span style="font-size:11px;font-weight:700;color:var(--gris-b);width:50px;text-align:right">${pts} pts</span>
-            </div>`;}).join('')}
-        </div>`;}).join('')
-    : '<p style="color:var(--gris-b);font-size:13px;padding:20px 0;text-align:center">No se configuraron categorías.</p>';
-}
-
-function findMostFailed() {
-  const fails={};
-  G.history.filter(h=>!h.correct).forEach(h=>fails[h.q]=(fails[h.q]||0)+1);
-  let max=0,idx=-1;
-  Object.entries(fails).forEach(([k,v])=>{if(v>max){max=v;idx=parseInt(k);}});
-  return idx>=0?G.questions[idx].text:null;
-}
-
-function exportResults() {
-  const sorted=[...G.teams].sort((a,b)=>(G.scores[b.name]||0)-(G.scores[a.name]||0));
-  let txt='TRIVIA OAJNU\n'+'='.repeat(40)+'\n\n';
-  txt+='RANKING FINAL\n';
-  sorted.forEach((t,i)=>{
-    txt+=`${i+1}. ${t.name}: ${G.scores[t.name]||0} pts  (✓${G.correct[t.name]||0}  ✗${G.wrong[t.name]||0})\n`;
-  });
-  txt+='\nPREGUNTAS\n';
-  G.questions.forEach((q,i)=>{
-    txt+=`P${i+1} [${DIFF_LBL[q.diff]}${q.cat?' · '+q.cat:''}] ${q.pts} pts\n`;
-    txt+=`   Pregunta: ${q.text}\n`;
-    if(q.ans) txt+=`   Respuesta: ${q.ans}\n`;
-    if(q.explain) txt+=`   Explicación: ${q.explain}\n`;
-    txt+='\n';
-  });
-  if(G.cats.length){
-    txt+='RENDIMIENTO POR CATEGORÍA\n';
-    G.cats.forEach(cat=>{
-      txt+=`\n${cat}:\n`;
-      sorted.forEach(t=>{txt+=`  ${t.name}: ${G.catScores[t.name]?.[cat]||0} pts\n`;});
-    });
-  }
-  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='trivia_cmis_resultados.txt';a.click();
-}
-
-/* ══════════════════════════════════════
-   RESET
-══════════════════════════════════════ */
-function resetGame() {
-  stopTimer();
-  G = newState();
-  document.getElementById('team-list').innerHTML='';
-  document.getElementById('q-list').innerHTML='';
-  document.getElementById('q-empty').style.display='block';
-  document.getElementById('q-count').textContent='';
-  document.getElementById('cat-list').innerHTML='';
-  document.getElementById('cat-empty').style.display='block';
-  document.getElementById('btn-export').style.display='none';
-  const b=document.getElementById('btn-back-game');if(b)b.remove();
-  showScreen('screen-setup');
-  switchTab('t-mode'); selMode('grupos');
-  syncCatSelect();
-}
-
-/* ══════════════════════════════════════
-   SOUNDS
-══════════════════════════════════════ */
-function playSound(t) {
-  try {
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.connect(g);g.connect(ctx.destination);const n=ctx.currentTime;
-    if(t==='buzz'){o.frequency.setValueAtTime(880,n);o.frequency.exponentialRampToValueAtTime(440,n+.3);g.gain.setValueAtTime(.3,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.start(n);o.stop(n+.3);}
-    else if(t==='correct'){o.type='triangle';[523,659,784].forEach((f,i)=>o.frequency.setValueAtTime(f,n+i*.1));g.gain.setValueAtTime(.3,n);g.gain.exponentialRampToValueAtTime(.001,n+.4);o.start(n);o.stop(n+.4);}
-    else if(t==='wrong'){o.type='sawtooth';o.frequency.setValueAtTime(200,n);o.frequency.setValueAtTime(150,n+.15);g.gain.setValueAtTime(.2,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.start(n);o.stop(n+.3);}
-    else if(t==='timeout'){o.type='square';o.frequency.setValueAtTime(300,n);o.frequency.exponentialRampToValueAtTime(100,n+.5);g.gain.setValueAtTime(.25,n);g.gain.exponentialRampToValueAtTime(.001,n+.5);o.start(n);o.stop(n+.5);}
-    else if(t==='next'){o.type='sine';o.frequency.setValueAtTime(440,n);g.gain.setValueAtTime(.15,n);g.gain.exponentialRampToValueAtTime(.001,n+.2);o.start(n);o.stop(n+.2);}
-  }catch(e){}
-}
-
-/* ══════════════════════════════════════
-   INIT
-══════════════════════════════════════ */
-renderSedes(); renderTeamList(); renderQuestions(); renderCatList(); syncCatSelect(); updateSummary();
-
-/* ══════════════════════════════════════
-   AUDIENCE MODE — se activa con #audience en la URL
-══════════════════════════════════════ */
-
-
-
-function renderAudienceState(d) {
-  const teams    = d.teams    || [];
-  const questions= d.questions|| [];
-  const scores   = d.scores   || {};
-  const q        = questions[d.currentQ];
-  const pct      = d.timerDuration > 0 ? (d.timerLeft / d.timerDuration) * 100 : 100;
-
-  // Número de pregunta
-  document.getElementById('pub-qnum').textContent =
-    d.currentQ >= 0
-      ? `Pregunta ${d.currentQ + 1} / ${questions.length}`
-      : '—';
-
-  // Categoría + dificultad
-  const DIFF_LBL_A = { easy:'Fácil', mid:'Media', hard:'Difícil' };
-  document.getElementById('pub-meta').textContent = q
-    ? (q.cat ? q.cat + ' · ' : '') + (DIFF_LBL_A[q.diff] || '')
-    : 'OAJNU · Trivia';
-
-  // Texto de la pregunta
-  document.getElementById('pub-q').textContent = q
-    ? q.text
-    : (d.gameStarted ? 'Preparando siguiente pregunta...' : 'Esperando al moderador...');
-
-  // Imagen
-  const pi = document.getElementById('pub-img');
-  if (q && q.img) { pi.src = q.img; pi.style.display = 'block'; }
-  else { pi.style.display = 'none'; }
-
-  // Timer
-  const tn = document.getElementById('pub-tnum');
-  tn.textContent = (!d.timerRunning && d.timerLeft === d.timerDuration) ? '—' : d.timerLeft;
-  tn.className = 'pub-timer' + (pct < 30 ? ' danger' : pct < 60 ? ' warn' : '');
-
-  const bf = document.getElementById('pub-bfill');
-  bf.style.width = pct + '%';
-  bf.className = 'pub-bar-fill' + (pct < 30 ? ' danger' : pct < 60 ? ' warn' : '');
-
-  // Equipo que buzzeó
-  const buzzed = document.getElementById('pub-buzzed');
-  if (d.buzzedTeam) {
-    const t = teams.find(t => t.name === d.buzzedTeam);
-    buzzed.textContent = '🎯 ' + d.buzzedTeam;
-    buzzed.style.display = 'block';
-    if (t) { buzzed.style.background = t.color + '33'; buzzed.style.borderColor = t.color; }
-  } else {
-    buzzed.style.display = 'none';
-  }
-
-  // Marcador
-  const sorted = [...teams].sort((a, b) => (scores[b.name] || 0) - (scores[a.name] || 0));
-  document.getElementById('pub-scores').innerHTML = sorted.map(t => `
-    <div class="pub-score-item">
-      <div class="pub-score-dot" style="background:${t.color}"></div>
-      <span class="pub-score-name">${t.name}</span>
-      <span class="pub-score-pts">${scores[t.name] || 0}</span>
-    </div>`).join('');
-}
-</script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

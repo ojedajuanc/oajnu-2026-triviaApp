@@ -1,0 +1,43 @@
+/* ─────────────────────────────────────────
+   OAJNU DESIGN TOKENS
+   Fuente de verdad de todos los valores de diseño.
+   Importado primero — el resto del CSS depende de estas variables.
+───────────────────────────────────────── */
+
+/* Audience mode: ocultar app antes del primer paint */
+html.is-audience #app           { display: none !important; }
+html.is-audience #screen-public { display: flex !important; flex-direction: column; }
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Colores de marca */
+  --c-naranja:      #E05206;
+  --c-naranja-d:    #b33e00;
+  --c-naranja-bg:   #fff3ee;
+  --c-cyan:         #009AA6;
+  --c-cyan-d:       #007880;
+  --c-cyan-bg:      #e6f7f8;
+
+  /* Soporte */
+  --c-blanco:       #ffffff;
+  --c-gris-f:       #F5F5F5;
+  --c-gris-m:       #e0e0e0;
+  --c-gris-b:       #999999;
+  --c-negro:        #1a1a1a;
+  --c-texto:        #333333;
+
+  /* Semánticos */
+  --c-ok:           #2e7d32;
+  --c-ok-d:         #1b5e20;
+  --c-error:        #c62828;
+  --c-error-d:      #8b0000;
+
+  /* Espaciado y radio */
+  --radius:         12px;
+  --radius-sm:      8px;
+}
