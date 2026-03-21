@@ -547,7 +547,7 @@ Categoría,easy,10</pre>
       <div class="q-counter-lbl" id="g-qtotal">de 0 preguntas</div>
     </div>
     <div class="game-actions">
-      <button class="btn btn-white btn-sm" onclick="openPublic()">Pantalla pública</button>
+      <button class="btn btn-white btn-sm" onclick="window.open(location.pathname+'?audience','trivia-publico','width=1280,height=720')">Pantalla pública ↗</button>
       <button class="btn btn-white-outline btn-sm" onclick="viewScoreboard()">Ranking</button>
       <button class="btn btn-white-outline btn-sm" onclick="confirmEnd()">Finalizar</button>
     </div>
@@ -631,6 +631,7 @@ Categoría,easy,10</pre>
   <div class="pub-timer" id="pub-tnum">—</div>
   <div class="pub-bar"><div class="pub-bar-fill" id="pub-bfill" style="width:100%"></div></div>
   <div class="pub-scores" id="pub-scores"></div>
+  <div id="pub-buzzed" style="display:none;margin-top:20px;padding:14px 28px;border-radius:12px;border:2px solid var(--naranja);font-size:22px;font-weight:900;color:var(--blanco);letter-spacing:1px"></div>
   <button class="pub-back" onclick="closePublic()">← Panel</button>
 </div>
 
@@ -682,6 +683,40 @@ Categoría,easy,10</pre>
 
 <script>
 /* ══════════════════════════════════════
+   BROADCAST CHANNEL — sincronización entre pestañas
+   • La pestaña que arranca SIN ?audience en la URL = MODERADOR
+   • La pestaña que arranca CON  ?audience en la URL = PANTALLA PÚBLICA
+   El moderador emite; la audiencia escucha y se renderiza.
+══════════════════════════════════════ */
+const BC_NAME = 'trivia-cmis-v3';
+const IS_AUDIENCE = location.search.includes('audience');
+const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(BC_NAME) : null;
+ 
+// Serializa el estado para broadcast (excluye timerInterval que no es transferible)
+function broadcastState(extra) {
+  if (!bc || IS_AUDIENCE) return;
+  const payload = {
+    type: 'state',
+    currentQ:       G.currentQ,
+    questions:      G.questions,
+    teams:          G.teams,
+    scores:         G.scores,
+    timerLeft:      G.timerLeft,
+    timerDuration:  G.timerDuration,
+    timerRunning:   G.timerRunning,
+    buzzedTeam:     G.buzzedTeam,
+    gameStarted:    G.gameStarted || false,
+    ...extra
+  };
+  bc.postMessage(payload);
+}
+ 
+// Solicitar estado actual al moderador (útil cuando la pestaña audiencia se abre tarde)
+function requestState() {
+  if (!bc) return;
+  bc.postMessage({ type: 'request-state' });
+}
+/* ══════════════════════════════════════
    CONSTANTES
 ══════════════════════════════════════ */
 const SEDES = [
@@ -705,7 +740,8 @@ function newState() {
     timerDuration:30, jokersPerTeam:1,
     currentQ:-1, scores:{}, correct:{}, wrong:{}, jokers:{}, catScores:{},
     timerInterval:null, timerRunning:false, timerLeft:30,
-    buzzedTeam:null, judged:false, imgData:null, history:[]
+    buzzedTeam:null, judged:false, imgData:null, history:[],
+    gameStarted:false
   };
 }
 
@@ -1006,6 +1042,7 @@ function startGame() {
     G.cats.forEach(c=>G.catScores[t.name][c]=0);
   });
   G.currentQ = -1;
+  G.gameStarted = true;
   showScreen('screen-game');
   document.getElementById('g-qtotal').textContent = 'de '+G.questions.length+' preguntas';
   renderScoreboard(); renderBuzzerGrid(); nextQ();
@@ -1047,6 +1084,7 @@ function buzz(name) {
   }
   playSound('buzz');
   syncPublic();
+  broadcastState();
 }
 
 function judge(correct) {
@@ -1061,7 +1099,7 @@ function judge(correct) {
     if (q.cat) G.catScores[name][q.cat]=(G.catScores[name][q.cat]||0)+delta;
   } else { G.wrong[name]++; }
   G.history.push({q:G.currentQ, team:name, correct, delta});
-  showDelta(name, delta); renderScoreboard(); syncPublic();
+  showDelta(name, delta); renderScoreboard(); syncPublic(); broadcastState();
   playSound(correct?'correct':'wrong');
   document.getElementById('judge-btns').style.display = 'none';
   document.getElementById('buzzed-box').classList.remove('active');
@@ -1124,7 +1162,7 @@ function nextQ() {
     `<span class="badge ${DIFF_CLASS[q.diff]}">${DIFF_LBL[q.diff]} · ${q.pts} pts</span>` +
     (q.cat?`<span class="badge badge-cat">${q.cat}</span>`:'');
   document.getElementById('g-qnum').textContent = G.currentQ+1;
-  resetTimerBar(); playSound('next'); syncPublic();
+  resetTimerBar(); playSound('next'); syncPublic(); broadcastState();
 }
 
 function revealAns() {
@@ -1189,6 +1227,7 @@ function updateTimerUI() {
   const bf = document.getElementById('pub-bfill');
   bf.style.width = pct+'%';
   bf.className = 'pub-bar-fill'+(pct<30?' danger':pct<60?' warn':'');
+  broadcastState();
 }
 
 /* ══════════════════════════════════════
@@ -1406,6 +1445,87 @@ function playSound(t) {
    INIT
 ══════════════════════════════════════ */
 renderSedes(); renderTeamList(); renderQuestions(); renderCatList(); syncCatSelect(); updateSummary();
+
+/* ══════════════════════════════════════
+   AUDIENCE MODE — se activa con ?audience en la URL
+══════════════════════════════════════ */
+if (IS_AUDIENCE) {
+  // Ocultar toda la UI del moderador, mostrar solo pantalla pública
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('screen-public').style.display = 'flex';
+  document.title = 'Trivia CMIs · Pantalla Pública';
+  // Botón de volver no tiene sentido en audiencia
+  const backBtn = document.querySelector('.pub-back');
+  if (backBtn) backBtn.style.display = 'none';
+  // Mostrar indicador de espera hasta que llegue estado
+  document.getElementById('pub-q').textContent = 'Esperando al moderador...';
+  document.getElementById('pub-tnum').textContent = '—';
+  // Escuchar mensajes del moderador
+  if (bc) {
+    bc.onmessage = (e) => {
+      const d = e.data;
+      if (d.type === 'state') renderAudienceState(d);
+    };
+    // Pedir estado actual por si el moderador ya empezó
+    requestState();
+  }
+}
+// El moderador responde a pedidos de estado
+if (!IS_AUDIENCE && bc) {
+  bc.onmessage = (e) => {
+    if (e.data.type === 'request-state') broadcastState();
+  };
+}
+function renderAudienceState(d) {
+  const teams    = d.teams    || [];
+  const questions= d.questions|| [];
+  const scores   = d.scores   || {};
+  const q        = questions[d.currentQ];
+  const pct      = d.timerDuration > 0 ? (d.timerLeft / d.timerDuration) * 100 : 100;
+  // Número de pregunta
+  document.getElementById('pub-qnum').textContent =
+    d.currentQ >= 0
+      ? `Pregunta ${d.currentQ + 1} / ${questions.length}`
+      : '—';
+  // Categoría + dificultad
+  const DIFF_LBL_A = { easy:'Fácil', mid:'Media', hard:'Difícil' };
+  document.getElementById('pub-meta').textContent = q
+    ? (q.cat ? q.cat + ' · ' : '') + (DIFF_LBL_A[q.diff] || '')
+    : 'OAJNU · Trivia de CMIs';
+  // Texto de la pregunta
+  document.getElementById('pub-q').textContent = q
+    ? q.text
+    : (d.gameStarted ? 'Preparando siguiente pregunta...' : 'Esperando al moderador...');
+  // Imagen
+  const pi = document.getElementById('pub-img');
+  if (q && q.img) { pi.src = q.img; pi.style.display = 'block'; }
+  else { pi.style.display = 'none'; }
+  // Timer
+  const tn = document.getElementById('pub-tnum');
+  tn.textContent = (!d.timerRunning && d.timerLeft === d.timerDuration) ? '—' : d.timerLeft;
+  tn.className = 'pub-timer' + (pct < 30 ? ' danger' : pct < 60 ? ' warn' : '');
+  const bf = document.getElementById('pub-bfill');
+  bf.style.width = pct + '%';
+  bf.className = 'pub-bar-fill' + (pct < 30 ? ' danger' : pct < 60 ? ' warn' : '');
+  // Equipo que buzzeó
+  const buzzed = document.getElementById('pub-buzzed');
+  if (d.buzzedTeam) {
+    const t = teams.find(t => t.name === d.buzzedTeam);
+    buzzed.textContent = '🎯 ' + d.buzzedTeam;
+    buzzed.style.display = 'block';
+    if (t) { buzzed.style.background = t.color + '33'; buzzed.style.borderColor = t.color; }
+  } else {
+    buzzed.style.display = 'none';
+  }
+  // Marcador
+  const sorted = [...teams].sort((a, b) => (scores[b.name] || 0) - (scores[a.name] || 0));
+  document.getElementById('pub-scores').innerHTML = sorted.map(t => `
+    <div class="pub-score-item">
+      <div class="pub-score-dot" style="background:${t.color}"></div>
+      <span class="pub-score-name">${t.name}</span>
+      <span class="pub-score-pts">${scores[t.name] || 0}</span>
+    </div>`).join('');
+}
 </script>
 </body>
 </html>
