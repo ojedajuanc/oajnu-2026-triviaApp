@@ -6,8 +6,9 @@
 <title>Trivia OAJNU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- Detectar modo audiencia ANTES del primer render — evita flash de pantalla en blanco -->
+<script>if(location.hash.includes('audience'))document.documentElement.classList.add('is-audience');</script>
 <style>
-/* audience mode - activated by JS after Firebase role detection */
 html.is-audience #app{display:none!important}
 html.is-audience #screen-public{display:flex!important}
 /* ══════════════════════════════════════════
@@ -556,7 +557,7 @@ Categoría,easy,10</pre>
       <div class="q-counter-lbl" id="g-qtotal">de 0 preguntas</div>
     </div>
     <div class="game-actions">
-      <button class="btn btn-white btn-sm" onclick="window.open(location.href.split('?')[0]+'?audience','trivia-publico','width=1280,height=720')">Pantalla pública ↗</button>
+      <button class="btn btn-white btn-sm" onclick="window.open(location.href.split('?')[0].split('#')[0]+'#audience','trivia-publico','width=1280,height=720')">Pantalla pública ↗</button>
       <button class="btn btn-white-outline btn-sm" onclick="viewScoreboard()">Ranking</button>
       <button class="btn btn-white-outline btn-sm" onclick="confirmEnd()">Finalizar</button>
     </div>
@@ -693,26 +694,27 @@ Categoría,easy,10</pre>
 <script>
 /* ══════════════════════════════════════
    FIREBASE — sincronización en tiempo real
-   • ?audience  → pantalla pública (solo lectura)
-   • sin param  → moderador (lee + escribe)
+   • #audience  → pantalla pública (solo lectura)
+   • sin hash   → moderador (lee + escribe)
    Reemplaza completamente BroadcastChannel.
 ══════════════════════════════════════ */
 
 // ── Configuración Firebase (completar con tus datos) ──
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyBrEkdO1zUNzarBPjXLNYC8Iw5YXuehyKg",
+  apiKey: "AIzaSyBrEkdO1zUNzarBPjXLNYC8Iw5YXuehyKg",
   authDomain: "trivaapp-oajnu.firebaseapp.com",
   databaseURL: "https://trivaapp-oajnu-default-rtdb.firebaseio.com",
   projectId: "trivaapp-oajnu",
   storageBucket: "trivaapp-oajnu.firebasestorage.app",
   messagingSenderId: "556848845323",
-  appId: "1:556848845323:web:a80fd25762680cdcdb6d0e"
+  appId: "1:556848845323:web:a80fd25762680cdcdb6d0e",
+  measurementId: "G-LRVBY5M089"
 };
 
 const FB_PATH = 'trivia/estado'; // nodo en Realtime Database
 
 // Detección de rol
-const IS_AUDIENCE = (location.search + location.hash).includes('audience');
+const IS_AUDIENCE = location.hash.includes('audience');
 
 // SDK Firebase (cargado dinámicamente para mantener todo en un solo archivo)
 let fbDatabase = null;
@@ -1516,7 +1518,7 @@ function playSound(t) {
 renderSedes(); renderTeamList(); renderQuestions(); renderCatList(); syncCatSelect(); updateSummary();
 
 /* ══════════════════════════════════════
-   AUDIENCE MODE — se activa con ?audience en la URL
+   AUDIENCE MODE — se activa con #audience en la URL
 ══════════════════════════════════════ */
 
 
