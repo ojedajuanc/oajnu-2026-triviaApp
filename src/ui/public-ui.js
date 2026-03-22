@@ -1,6 +1,6 @@
 import { DOM } from './dom.js';
 import { DIFF } from '../config/constants.js';
-import { escHtml } from './utils.js';
+import { escHtml } from '../utils.js';
 
 export function renderAudienceView(data) {
   const { teams = [], questions = [], scores = {}, currentQ, started,

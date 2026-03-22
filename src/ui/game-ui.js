@@ -1,6 +1,6 @@
 import { DOM } from './dom.js';
 import { DIFF } from '../config/constants.js';
-import { escHtml, escAttr } from './utils.js';
+import { escHtml, escAttr } from '../utils.js';
 
 /**
  * Renderiza la grilla de botones de buzzer.

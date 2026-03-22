@@ -1,4 +1,4 @@
-import { escHtml } from './utils.js';
+import { escHtml } from '../utils.js';
 import { DIFF } from '../config/constants.js';
 
 const $ = id => document.getElementById(id);
