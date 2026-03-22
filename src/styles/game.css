@@ -142,3 +142,25 @@
   vertical-align: middle;
 }
 .sala-badge:empty { display: none; }
+
+/* ── Buzzer bloqueado (equipo respondió mal este turno) ── */
+.buzzer-btn--wrong {
+  opacity: .45;
+  border-color: var(--c-error) !important;
+  color: var(--c-error) !important;
+  cursor: not-allowed;
+}
+.buzzer-btn__wrong-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--c-error);
+  letter-spacing: .5px;
+}
+
+/* ── Sala badge clickeable ── */
+.sala-badge {
+  cursor: pointer;
+  user-select: none;
+  transition: background .2s;
+}
+.sala-badge:hover { background: rgba(255,255,255,.35) !important; }

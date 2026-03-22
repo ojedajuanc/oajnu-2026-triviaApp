@@ -1,25 +1,27 @@
 import { DOM } from './dom.js';
 import { DIFF } from '../config/constants.js';
-import { escHtml, escAttr } from '../utils.js';
+import { escHtml, escAttr } from './utils.js';
 
 /**
  * Renderiza la grilla de botones de buzzer.
- * Usa event delegation con data-team-index para evitar
- * problemas con caracteres especiales en nombres de equipos.
  * @param {Array<{name: string, color: string}>} teams
  * @param {(teamName: string) => void} onBuzz
+ * @param {Record<string, boolean>} answeredWrong equipos bloqueados este turno
  */
-export function renderBuzzerGrid(teams, onBuzz) {
-  DOM.buzzerGrid.innerHTML = teams.map((t, i) => `
-    <button class="buzzer-btn" data-team-index="${i}">
-      <div class="team-dot" style="background:${t.color}"></div>
-      <span>${escHtml(t.name)}</span>
-    </button>`).join('');
+export function renderBuzzerGrid(teams, onBuzz, answeredWrong = {}) {
+  DOM.buzzerGrid.innerHTML = teams.map((t, i) => {
+    const blocked = !!answeredWrong[t.name];
+    return `
+      <button class="buzzer-btn ${blocked ? 'buzzer-btn--wrong' : ''}"
+        data-team-index="${i}" ${blocked ? 'disabled' : ''}>
+        <div class="team-dot" style="background:${t.color}"></div>
+        <span>${escHtml(t.name)}</span>
+        ${blocked ? '<span class="buzzer-btn__wrong-label">✗ ya respondió</span>' : ''}
+      </button>`;
+  }).join('');
 
-  // Usar { once: true } para que el listener se limpie automáticamente
-  // después del primer click y se re-registre en la próxima pregunta
   DOM.buzzerGrid.addEventListener('click', e => {
-    const btn = e.target.closest('[data-team-index]');
+    const btn = e.target.closest('[data-team-index]:not([disabled])');
     if (btn) onBuzz(teams[parseInt(btn.dataset.teamIndex)].name);
   }, { once: true });
 }

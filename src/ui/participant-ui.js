@@ -1,4 +1,4 @@
-import { escHtml } from '../utils.js';
+import { escHtml } from './utils.js';
 import { DIFF } from '../config/constants.js';
 
 const $ = id => document.getElementById(id);
@@ -10,14 +10,23 @@ const $ = id => document.getElementById(id);
  */
 export function renderParticipantView(data, myTeam) {
   const { teams = [], questions = [], scores = {}, currentQ,
-          timerLeft, timerDuration, timerRunning, buzzedTeam, started } = data;
+          timerLeft, timerDuration, timerRunning, buzzedTeam, started,
+          questionVisible, teamsAnsweredWrong = {}, gameOver } = data;
 
   const q = questions[currentQ];
 
-  // Pregunta
-  $('part-question').textContent = q
+  // Si la partida terminó, mostrar mensaje final
+  if (gameOver) {
+    $('part-question').textContent = '¡La partida terminó! Chequeá el ranking en la pantalla principal.';
+    $('part-buzz-btn').disabled = true;
+    $('part-timer').textContent = '—';
+    return;
+  }
+
+  // Pregunta — solo mostrar cuando el moderador la habilitó
+  $('part-question').textContent = q && questionVisible
     ? q.text
-    : (started ? 'Preparando siguiente pregunta...' : 'Esperando al moderador...');
+    : (started ? 'Esperando siguiente pregunta...' : 'Esperando al moderador...');
 
   // Timer
   const pct   = timerDuration > 0 ? (timerLeft / timerDuration) * 100 : 100;
@@ -25,15 +34,21 @@ export function renderParticipantView(data, myTeam) {
   $('part-timer').textContent = (!timerRunning && timerLeft === timerDuration) ? '—' : timerLeft;
   $('part-timer').className   = `part-timer${state ? ' part-timer--' + state : ''}`;
 
-  // Estado del botón de buzz
   const buzzBtn    = $('part-buzz-btn');
   const buzzStatus = $('part-buzz-status');
+  const myTeamAnsweredWrong = !!teamsAnsweredWrong[myTeam];
 
-  if (!q || !started) {
+  if (!q || !started || !questionVisible) {
     buzzBtn.disabled = true;
     buzzBtn.classList.remove('part-buzz-btn--fired');
     buzzStatus.textContent = '';
     buzzStatus.className   = 'part-buzz-status';
+  } else if (myTeamAnsweredWrong) {
+    // Este equipo ya respondió mal — bloqueado hasta la siguiente pregunta
+    buzzBtn.disabled = true;
+    buzzBtn.classList.remove('part-buzz-btn--fired');
+    buzzStatus.textContent = 'Ya respondiste en este turno';
+    buzzStatus.className   = 'part-buzz-status part-buzz-status--late';
   } else if (buzzedTeam) {
     buzzBtn.disabled = true;
     if (buzzedTeam === myTeam) {

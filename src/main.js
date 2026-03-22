@@ -340,13 +340,14 @@ function advanceQuestion() {
   setTimerButtonState('idle');
   resetGameUI();
 
-  // Limpiar canal de buzz en Firebase para la nueva pregunta
   if (setupState.buzzMode === BUZZ_MODE.PARTICIPANT) {
     clearBuzzChannel();
-    // Re-armar el listener para la siguiente pregunta
     if (_unsubBuzz) _unsubBuzz();
     _unsubBuzz = subscribeToFirstBuzz(teamName => {
-      if (!gameState.buzzedTeam && !gameState._judged) buzzHandler(teamName);
+      if (!gameState.buzzedTeam && !gameState._judged &&
+          !gameState.teamsAnsweredWrong[teamName]) {
+        buzzHandler(teamName);
+      }
     });
   }
 
@@ -354,6 +355,8 @@ function advanceQuestion() {
   gameState.setBuzzedTeam(null);
   gameState.setJudged(false);
   gameState.setStarted(true);
+  gameState.setQuestionVisible(false); // ocultar pregunta hasta que el moderador arranque
+  gameState.clearAnsweredWrong();
 
   if (gameState.currentQ >= setupState.questions.length) {
     endGame();
@@ -363,11 +366,9 @@ function advanceQuestion() {
   const q = setupState.questions[gameState.currentQ];
   renderQuestion(q, gameState.currentQ, setupState.questions.length);
 
-  // En modo moderador mostramos la grilla de buzzer; en modo participante no
   if (setupState.buzzMode === BUZZ_MODE.MODERATOR) {
     renderBuzzerGrid(gameState.teams, buzzHandler);
     document.getElementById('buzzer-grid').style.display = 'grid';
-    document.querySelector('.label:last-of-type')?.style && (document.querySelector('[class="label"]:last-of-type').style.display = 'block');
   } else {
     document.getElementById('buzzer-grid').style.display = 'none';
   }
@@ -419,16 +420,33 @@ window.judge = (isCorrect) => {
     uiRevealAnswer(!!q.explain);
     stopTimer();
     setTimerButtonState('idle');
+    gameState.setJudged(false); // reset para siguiente pregunta
   } else {
+    // Marcar equipo como ya respondido mal en este turno
+    gameState.markAnsweredWrong(teamName);
     gameState.setJudged(false);
-    // En modo participante, re-habilitar el buzz para que otro equipo intente
+
+    // Actualizar grilla del moderador — deshabilitar el equipo que respondió mal
+    if (setupState.buzzMode === BUZZ_MODE.MODERATOR) {
+      renderBuzzerGrid(
+        gameState.teams,
+        buzzHandler,
+        gameState.teamsAnsweredWrong,
+      );
+    }
+
+    // En modo participante, re-habilitar buzz solo para equipos que no respondieron mal
     if (setupState.buzzMode === BUZZ_MODE.PARTICIPANT) {
       clearBuzzChannel();
       if (_unsubBuzz) _unsubBuzz();
       _unsubBuzz = subscribeToFirstBuzz(name => {
-        if (!gameState.buzzedTeam && !gameState._judged) buzzHandler(name);
+        if (!gameState.buzzedTeam && !gameState._judged &&
+            !gameState.teamsAnsweredWrong[name]) {
+          buzzHandler(name);
+        }
       });
     }
+
     resumeTimer();
     setTimerButtonState('running');
   }
@@ -456,6 +474,9 @@ window.toggleTimer = () => {
     pauseTimer();
     setTimerButtonState('paused');
   } else if (left === setupState.timerDuration) {
+    // Primera vez que arranca — revelar pregunta a la audiencia
+    gameState.setQuestionVisible(true);
+    publish();
     startTimer(setupState.timerDuration);
     setTimerButtonState('running');
   } else {
@@ -469,6 +490,24 @@ document.getElementById('btn-open-public')?.addEventListener('click', () => {
   const base = location.href.split('?')[0].split('#')[0];
   const code = getSalaCode();
   window.open(`${base}#audience/${code}`, 'trivia-publico', 'width=1280,height=720');
+});
+
+/* ── Sala badge — click copia el enlace de participante al portapapeles ── */
+document.getElementById('sala-badge')?.addEventListener('click', () => {
+  const code = getSalaCode();
+  if (!code) return;
+  const base = location.href.split('?')[0].split('#')[0];
+  const link = `${base}#sala/${code}`;
+  navigator.clipboard.writeText(link).then(() => {
+    const badge = document.getElementById('sala-badge');
+    const original = badge.textContent;
+    badge.textContent = '¡Copiado!';
+    badge.style.background = 'rgba(76,175,122,.3)';
+    setTimeout(() => {
+      badge.textContent = original;
+      badge.style.background = '';
+    }, 2000);
+  });
 });
 
 /* ════════════════════════════════════════════════════════
@@ -509,15 +548,16 @@ window.endGame = () => {
   closeModal('modal-end');
   stopTimer();
   if (_unsubBuzz) { _unsubBuzz(); _unsubBuzz = null; }
+  gameState.setGameOver(true);
   buildFinalScreens(buildFinalData());
-  // Guardar resultados en Firebase para el dashboard post-sesión
   writeResults({
-    salaCode: getSalaCode(),
-    scores:   gameState.scores,
-    teams:    gameState.teams,
+    salaCode:  getSalaCode(),
+    scores:    gameState.scores,
+    teams:     gameState.teams,
     questions: setupState.questions.map(({ text, diff, pts, cat }) => ({ text, diff, pts, cat })),
-    history:  gameState._history,
+    history:   gameState._history,
   });
+  publish();
   showScreen('screen-final');
   DOM.btnExport.style.display = 'inline-flex';
   document.getElementById('btn-back-game')?.remove();
@@ -545,11 +585,13 @@ window.resetGame = () => {
   renderCatList();
   syncCatSelect();
   updateSetupSummary();
-  document.getElementById('inp-timer').value         = '30';
-  document.getElementById('inp-timer-val').textContent = '30';
-  document.getElementById('inp-jokers').value        = '1';
+  document.getElementById('inp-timer').value            = '30';
+  document.getElementById('inp-timer-val').textContent  = '30';
+  document.getElementById('inp-jokers').value           = '1';
   document.getElementById('inp-jokers-val').textContent = '1';
-  document.getElementById('sala-badge').textContent  = '';
+  document.getElementById('sala-badge').textContent     = '';
+  document.getElementById('file-inp').value             = '';
+  document.getElementById('import-msg').style.display   = 'none';
   window.selectBuzzMode(BUZZ_MODE.MODERATOR);
   DOM.btnExport.style.display = 'none';
   document.getElementById('btn-back-game')?.remove();
