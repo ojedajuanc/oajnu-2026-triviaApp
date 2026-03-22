@@ -91,14 +91,15 @@ export function initGame(setupState) {
 
 /**
  * Serializa el estado público para enviarlo a Firebase.
- * Solo incluye lo que la pantalla de audiencia necesita.
+ * Solo incluye lo que la pantalla de audiencia y los participantes necesitan.
  * @param {{ left: number, running: boolean }} timerState
+ * @param {{ buzzMode: string, salaCode: string }} meta
  * @returns {object}
  */
-export function toFirebasePayload(timerState) {
+export function toFirebasePayload(timerState, meta = {}) {
   return {
     teams,
-    questions,      // ya sin imágenes
+    questions,
     timerDuration,
     timerLeft:    timerState.left,
     timerRunning: timerState.running,
@@ -106,6 +107,8 @@ export function toFirebasePayload(timerState) {
     started,
     buzzedTeam,
     scores,
+    buzzMode:  meta.buzzMode  || 'moderator',
+    salaCode:  meta.salaCode  || null,
   };
 }
 

@@ -123,3 +123,23 @@
   align-items: center;
 }
 .setup-summary { font-size: 12px; color: var(--c-gris-b); font-weight: 700; }
+
+/* ── Buzz mode selector ── */
+.buzz-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.buzz-mode-card {
+  background: var(--c-blanco);
+  border: 2px solid var(--c-gris-m);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .2s, background .2s;
+}
+.buzz-mode-card.selected  { border-color: var(--c-naranja); background: var(--c-naranja-bg); }
+.buzz-mode-card__icon     { font-size: 24px; margin-bottom: 6px; }
+.buzz-mode-card__title    { font-size: 14px; font-weight: 900; color: var(--c-naranja); margin-bottom: 4px; }
+.buzz-mode-card__desc     { font-size: 11px; color: var(--c-gris-b); line-height: 1.4; }

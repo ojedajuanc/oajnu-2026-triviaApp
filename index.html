@@ -12,9 +12,12 @@
     pero nunca toca el hash.
   -->
   <script>
-    if (location.hash.includes('audience')) {
-      document.documentElement.classList.add('is-audience');
-    }
+    (function() {
+      var h = location.hash.slice(1);
+      var role = h.split('/')[0];
+      if (role === 'audience')    document.documentElement.classList.add('is-audience');
+      if (role === 'sala')        document.documentElement.classList.add('is-participant');
+    })();
   </script>
 </head>
 <body>
@@ -85,6 +88,24 @@
               oninput="document.getElementById('inp-jokers-val').textContent = this.value" />
             <span id="inp-jokers-val" class="range-val range-val--purple">1</span>
             <span class="range-unit">por equipo</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="label">Modo de buzz</div>
+          <div class="buzz-mode-grid">
+            <div class="buzz-mode-card selected" id="bm-moderator"
+              onclick="selectBuzzMode('moderator')">
+              <div class="buzz-mode-card__icon">🖱️</div>
+              <div class="buzz-mode-card__title">Moderador</div>
+              <div class="buzz-mode-card__desc">El moderador indica quién respondió primero (ideal para videollamada)</div>
+            </div>
+            <div class="buzz-mode-card" id="bm-participant"
+              onclick="selectBuzzMode('participant')">
+              <div class="buzz-mode-card__icon">📱</div>
+              <div class="buzz-mode-card__title">Participantes</div>
+              <div class="buzz-mode-card__desc">Cada participante tiene su botón en el celu. Firebase registra quién llegó primero.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -209,7 +230,10 @@ categoria,dificultad,puntos</pre>
   <!-- ══ GAME ══ -->
   <div id="screen-game" class="screen">
     <div class="game-header">
-      <div class="game-header__brand">Trivia OAJNU</div>
+      <div class="game-header__brand">
+        Trivia OAJNU
+        <span class="sala-badge" id="sala-badge"></span>
+      </div>
       <div class="game-header__counter">
         <div class="game-header__counter-num" id="g-qnum">1</div>
         <div class="game-header__counter-lbl" id="g-qtotal">de 0 preguntas</div>
@@ -330,6 +354,32 @@ categoria,dificultad,puntos</pre>
   </div>
   <div class="pub-scores"  id="pub-scores"></div>
   <div class="pub-buzzed"  id="pub-buzzed"></div>
+</div>
+
+<!-- ══ PANTALLA PARTICIPANTE — fuera de #app ══ -->
+<div id="screen-participant">
+  <div class="part-header">
+    <div class="part-brand">OAJNU · Trivia</div>
+    <div class="part-sala" id="part-sala-code">—</div>
+  </div>
+
+  <!-- Estado: elegir equipo -->
+  <div id="part-join" class="part-section">
+    <div class="part-title">Elegí tu equipo</div>
+    <div class="part-teams" id="part-teams"></div>
+  </div>
+
+  <!-- Estado: en juego -->
+  <div id="part-game" class="part-section" style="display:none">
+    <div class="part-team-badge" id="part-team-badge"></div>
+    <div class="part-question" id="part-question">Esperando pregunta...</div>
+    <div class="part-timer" id="part-timer">—</div>
+    <button class="part-buzz-btn" id="part-buzz-btn" onclick="participantBuzz()" disabled>
+      ¡Respondo!
+    </button>
+    <div class="part-buzz-status" id="part-buzz-status"></div>
+    <div class="part-scores" id="part-scores"></div>
+  </div>
 </div>
 
 <!-- ══ MODALES — fuera de #app para z-index limpio ══ -->

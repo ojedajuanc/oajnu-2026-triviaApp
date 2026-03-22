@@ -8,6 +8,11 @@
 html.is-audience #app           { display: none !important; }
 html.is-audience #screen-public { display: flex !important; flex-direction: column; }
 
+/* Participant mode */
+html.is-participant #app                { display: none !important; }
+html.is-participant #screen-participant { display: flex !important; }
+html.is-participant #screen-public      { display: none !important; }
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

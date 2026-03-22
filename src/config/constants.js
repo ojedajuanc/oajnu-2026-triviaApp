@@ -23,5 +23,8 @@ export const DIFF = {
 export const MAX_TEAMS   = 7;
 export const PENALTY_PTS = -5;
 
-/** Nodo en Firebase Realtime Database */
-export const FB_PATH = 'trivia/estado';
+/** Modos de buzz disponibles */
+export const BUZZ_MODE = {
+  MODERATOR:   'moderator',   // el moderador presiona el botón manualmente
+  PARTICIPANT: 'participant', // cada participante tiene su propio botón en el celu
+};

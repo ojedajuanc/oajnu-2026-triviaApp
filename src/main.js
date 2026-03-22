@@ -1,15 +1,10 @@
 /**
  * main.js — Entry point de la aplicación.
  *
- * Responsabilidades:
- *  1. Importar estilos (Vite los procesa y hace tree-shaking)
- *  2. Detectar rol (moderador vs. audiencia) y bifurcar inicialización
- *  3. Exponer al HTML las funciones que los onclick necesitan (window.*)
- *  4. Cablear los módulos entre sí (estado ↔ UI ↔ Firebase ↔ timer)
- *
- * Nota sobre window.*: en una app con framework (React, Vue) esto no sería
- * necesario. En Vanilla JS + HTML con onclick inline, es la forma más simple
- * de exponer funciones sin añadir complejidad innecesaria.
+ * Roles detectados por el hash de la URL:
+ *   (vacío)          → Moderador
+ *   #audience/{CODE} → Pantalla pública (proyector)
+ *   #sala/{CODE}     → Participante (buzz desde celu)
  */
 
 // ── Estilos ────────────────────────────────────────────
@@ -19,13 +14,19 @@ import './styles/components.css';
 import './styles/setup.css';
 import './styles/game.css';
 import './styles/public.css';
+import './styles/participant.css';
 import './styles/final.css';
 
 // ── Firebase ───────────────────────────────────────────
-import { writeGameState, subscribeToGameState } from './config/firebase.js';
+import {
+  createSala, joinSala, getSalaCode,
+  writeGameState, subscribeToGameState,
+  sendBuzz, subscribeToFirstBuzz, clearBuzzChannel,
+  writeResults,
+} from './config/firebase.js';
 
 // ── Constantes ─────────────────────────────────────────
-import { SEDES, TEAM_COLORS, DIFF, MAX_TEAMS } from './config/constants.js';
+import { SEDES, TEAM_COLORS, DIFF, MAX_TEAMS, BUZZ_MODE } from './config/constants.js';
 
 // ── Estado ─────────────────────────────────────────────
 import * as setupState from './state/setup.js';
@@ -36,12 +37,12 @@ import {
   configureTimer, getTimerState,
   startTimer, resumeTimer, pauseTimer, stopTimer, resetTimer,
 } from './modules/timer.js';
-import { playSound }                             from './modules/audio.js';
-import { parseJsonFile, parseCsvFile }           from './modules/importer.js';
-import { exportResults, downloadTemplate as dlTemplate } from './modules/exporter.js';
+import { playSound }                                      from './modules/audio.js';
+import { parseJsonFile, parseCsvFile }                    from './modules/importer.js';
+import { exportResults, downloadTemplate as dlTemplate }  from './modules/exporter.js';
 
 // ── UI ─────────────────────────────────────────────────
-import { DOM }                                    from './ui/dom.js';
+import { DOM }                                            from './ui/dom.js';
 import { showScreen, switchTab, switchFinalTab, openModal, closeModal } from './ui/screens.js';
 import {
   renderSedes, renderTeamList, renderCatList,
@@ -52,40 +53,53 @@ import {
   updateTimerDisplay, setTimerButtonState, setTimerStatusText,
   showBuzzed, clearBuzzed, resetGameUI, updateJokerUI,
 } from './ui/game-ui.js';
-import { renderScoreboard, showScoreDelta }       from './ui/scoreboard-ui.js';
-import { buildFinalScreens }                      from './ui/final-ui.js';
-import { renderAudienceView }                     from './ui/public-ui.js';
+import { renderScoreboard, showScoreDelta }               from './ui/scoreboard-ui.js';
+import { buildFinalScreens }                              from './ui/final-ui.js';
+import { renderAudienceView }                             from './ui/public-ui.js';
+import {
+  renderParticipantView, renderTeamSelector, showGameView,
+} from './ui/participant-ui.js';
 
 /* ════════════════════════════════════════════════════════
    DETECCIÓN DE ROL
-   IS_AUDIENCE es inmutable — se determina una vez al cargar.
-   El script inline en <head> ya aplicó la clase CSS para
-   evitar flash, aquí completamos la inicialización JS.
+   Hash formats:
+     #audience/OAJN  → pantalla pública
+     #sala/OAJN      → participante
+     (cualquier otro) → moderador
 ════════════════════════════════════════════════════════ */
-const IS_AUDIENCE = location.hash.includes('audience');
+const hash = location.hash.slice(1); // quitar el #
+const [hashRole, hashCode] = hash.split('/');
+
+const IS_AUDIENCE    = hashRole === 'audience';
+const IS_PARTICIPANT = hashRole === 'sala';
+const IS_MODERATOR   = !IS_AUDIENCE && !IS_PARTICIPANT;
+
+// Aplicar clase CSS para pantalla de participante (evitar flash)
+if (IS_PARTICIPANT) document.documentElement.classList.add('is-participant');
 
 /* ════════════════════════════════════════════════════════
-   FIREBASE — publicar / suscribir
+   FIREBASE — conectar a la sala correcta
 ════════════════════════════════════════════════════════ */
+if ((IS_AUDIENCE || IS_PARTICIPANT) && hashCode) {
+  joinSala(hashCode);
+}
 
-/** Serializa y escribe el estado público a Firebase. */
+/** Serializa y publica el estado completo a Firebase. */
 function publish() {
-  writeGameState(gameState.toFirebasePayload(getTimerState()));
-}
-
-// La audiencia se suscribe en tiempo real; el moderador no necesita suscribirse.
-if (IS_AUDIENCE) {
-  subscribeToGameState(renderAudienceView);
+  writeGameState(gameState.toFirebasePayload(getTimerState(), {
+    buzzMode: setupState.buzzMode,
+    salaCode: getSalaCode(),
+  }));
 }
 
 /* ════════════════════════════════════════════════════════
-   TIMER — configurar callbacks
+   TIMER — callbacks
 ════════════════════════════════════════════════════════ */
 configureTimer({
   onTick: () => {
     const { left } = getTimerState();
     updateTimerDisplay(left, setupState.timerDuration);
-    publish(); // sincroniza el countdown a la pantalla pública cada segundo
+    publish();
   },
   onTimeout: () => {
     setTimerStatusText('¡Tiempo!');
@@ -96,10 +110,50 @@ configureTimer({
 });
 
 /* ════════════════════════════════════════════════════════
-   SETUP
+   AUDIENCIA — solo escucha
 ════════════════════════════════════════════════════════ */
+if (IS_AUDIENCE) {
+  subscribeToGameState(renderAudienceView);
+}
 
-// Tabs — event delegation en lugar de onclick inline
+/* ════════════════════════════════════════════════════════
+   PARTICIPANTE
+════════════════════════════════════════════════════════ */
+if (IS_PARTICIPANT) {
+  let myTeam = null;
+
+  document.title = 'Trivia OAJNU · Participante';
+  document.getElementById('part-sala-code').textContent = hashCode || '—';
+
+  // Suscribirse al estado del juego para actualizar la UI
+  subscribeToGameState(data => {
+    if (!myTeam) {
+      // Mostrar selector de equipos cuando llegan los equipos
+      if (data.teams?.length) {
+        renderTeamSelector(data.teams, teamName => {
+          const team = data.teams.find(t => t.name === teamName);
+          myTeam = teamName;
+          showGameView(teamName, team?.color || '#999');
+        });
+      }
+    } else {
+      renderParticipantView(data, myTeam);
+    }
+  });
+
+  // El participante envía buzz a Firebase
+  window.participantBuzz = () => {
+    if (!myTeam) return;
+    sendBuzz(myTeam);
+    document.getElementById('part-buzz-btn').disabled = true;
+  };
+}
+
+/* ════════════════════════════════════════════════════════
+   SETUP (solo moderador)
+════════════════════════════════════════════════════════ */
+if (IS_MODERATOR) {
+
 document.querySelectorAll('.tab[data-tab]').forEach(tab => {
   tab.addEventListener('click', () => switchTab(tab.dataset.tab));
 });
@@ -111,6 +165,12 @@ window.selectMode = (mode) => {
   document.getElementById('cfg-grupos').style.display = mode === 'grupos' ? 'block' : 'none';
   document.getElementById('cfg-sedes').style.display  = mode === 'sedes'  ? 'block' : 'none';
   updateSetupSummary();
+};
+
+window.selectBuzzMode = (mode) => {
+  setupState.setBuzzMode(mode);
+  document.getElementById('bm-moderator').classList.toggle('selected',   mode === BUZZ_MODE.MODERATOR);
+  document.getElementById('bm-participant').classList.toggle('selected', mode === BUZZ_MODE.PARTICIPANT);
 };
 
 window.addTeam = () => {
@@ -156,7 +216,7 @@ window.previewImg = (input) => {
   reader.onload = e => {
     setupState.setPendingImg(e.target.result);
     const prev = document.getElementById('img-preview');
-    prev.src           = e.target.result;
+    prev.src = e.target.result;
     prev.style.display = 'block';
   };
   reader.readAsDataURL(file);
@@ -165,19 +225,15 @@ window.previewImg = (input) => {
 window.addQuestion = () => {
   const text = document.getElementById('inp-q').value.trim();
   if (!text) return;
-
-  const diff     = document.getElementById('inp-diff').value;
+  const diff      = document.getElementById('inp-diff').value;
   const customPts = parseInt(document.getElementById('inp-pts').value);
-  const pts      = isNaN(customPts) ? DIFF[diff].pts : customPts;
-  const cat      = document.getElementById('inp-cat').value;
-
-  // Asegurar que la categoría exista en el estado
+  const pts       = isNaN(customPts) ? DIFF[diff].pts : customPts;
+  const cat       = document.getElementById('inp-cat').value;
   if (cat && !setupState.cats.includes(cat)) {
     setupState.addCat(cat);
     syncCatSelect();
     renderCatList();
   }
-
   setupState.addQuestion({
     text,
     ans:     document.getElementById('inp-ans').value.trim(),
@@ -186,13 +242,9 @@ window.addQuestion = () => {
     img: setupState.pendingImg,
   });
   setupState.clearPendingImg();
-
-  ['inp-q','inp-ans','inp-explain','inp-pts'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('inp-img').value   = '';
+  ['inp-q','inp-ans','inp-explain','inp-pts'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('inp-img').value = '';
   document.getElementById('img-preview').style.display = 'none';
-
   renderQuestionList();
   updateSetupSummary();
 };
@@ -203,10 +255,9 @@ window.removeQuestion = (index) => {
   updateSetupSummary();
 };
 
-/* ── Import ── */
-window.onDragOver  = (e) => { e.preventDefault(); document.getElementById('drop-zone').classList.add('import-zone--dragover'); };
-window.onDragLeave = ()  => { document.getElementById('drop-zone').classList.remove('import-zone--dragover'); };
-window.onDrop      = (e) => { e.preventDefault(); window.onDragLeave(); processFile(e.dataTransfer.files[0]); };
+window.onDragOver   = (e) => { e.preventDefault(); document.getElementById('drop-zone').classList.add('import-zone--dragover'); };
+window.onDragLeave  = ()  => { document.getElementById('drop-zone').classList.remove('import-zone--dragover'); };
+window.onDrop       = (e) => { e.preventDefault(); window.onDragLeave(); processFile(e.dataTransfer.files[0]); };
 window.onFileSelect = (input) => { if (input.files[0]) processFile(input.files[0]); };
 
 function processFile(file) {
@@ -218,9 +269,8 @@ function processFile(file) {
       const imported = ext === 'json' ? parseJsonFile(e.target.result)
                      : ext === 'csv'  ? parseCsvFile(e.target.result)
                      : null;
-      if (!imported)          { showImportMsg('Formato no soportado. Usá CSV o JSON.', true); return; }
-      if (!imported.length)   { showImportMsg('No se encontraron preguntas válidas.', true); return; }
-
+      if (!imported)        { showImportMsg('Formato no soportado. Usá CSV o JSON.', true); return; }
+      if (!imported.length) { showImportMsg('No se encontraron preguntas válidas.', true); return; }
       imported.forEach(q => {
         if (q.cat && !setupState.cats.includes(q.cat)) {
           setupState.addCat(q.cat);
@@ -229,7 +279,6 @@ function processFile(file) {
         }
         setupState.addQuestion(q);
       });
-
       renderQuestionList();
       updateSetupSummary();
       showImportMsg(`✓ ${imported.length} pregunta${imported.length !== 1 ? 's' : ''} importada${imported.length !== 1 ? 's' : ''} desde "${file.name}".`, false);
@@ -261,11 +310,21 @@ window.startGame = () => {
   setupState.setTimerDuration(parseInt(document.getElementById('inp-timer').value));
   setupState.setJokersPerTeam(parseInt(document.getElementById('inp-jokers').value));
 
+  // Crear sala en Firebase — genera el código único
+  const code = createSala();
+  document.getElementById('sala-badge').textContent = code;
+
   gameState.initGame(setupState);
+
+  // Si el modo es participante, suscribirse al canal de buzz
+  if (setupState.buzzMode === BUZZ_MODE.PARTICIPANT) {
+    _unsubBuzz = subscribeToFirstBuzz(teamName => {
+      if (!gameState.buzzedTeam && !gameState._judged) buzzHandler(teamName);
+    });
+  }
 
   showScreen('screen-game');
   DOM.gQtotal.textContent = `de ${setupState.questions.length} preguntas`;
-
   renderScoreboard(gameState.teams, gameState.scores);
   advanceQuestion();
 };
@@ -273,11 +332,23 @@ window.startGame = () => {
 /* ════════════════════════════════════════════════════════
    GAME LOGIC
 ════════════════════════════════════════════════════════ */
+let _unsubBuzz = null; // cleanup del listener de buzz en modo participante
+
 function advanceQuestion() {
   stopTimer();
   resetTimer(setupState.timerDuration);
   setTimerButtonState('idle');
   resetGameUI();
+
+  // Limpiar canal de buzz en Firebase para la nueva pregunta
+  if (setupState.buzzMode === BUZZ_MODE.PARTICIPANT) {
+    clearBuzzChannel();
+    // Re-armar el listener para la siguiente pregunta
+    if (_unsubBuzz) _unsubBuzz();
+    _unsubBuzz = subscribeToFirstBuzz(teamName => {
+      if (!gameState.buzzedTeam && !gameState._judged) buzzHandler(teamName);
+    });
+  }
 
   gameState.setCurrentQ(gameState.currentQ + 1);
   gameState.setBuzzedTeam(null);
@@ -291,13 +362,21 @@ function advanceQuestion() {
 
   const q = setupState.questions[gameState.currentQ];
   renderQuestion(q, gameState.currentQ, setupState.questions.length);
-  renderBuzzerGrid(gameState.teams, buzzHandler);
+
+  // En modo moderador mostramos la grilla de buzzer; en modo participante no
+  if (setupState.buzzMode === BUZZ_MODE.MODERATOR) {
+    renderBuzzerGrid(gameState.teams, buzzHandler);
+    document.getElementById('buzzer-grid').style.display = 'grid';
+    document.querySelector('.label:last-of-type')?.style && (document.querySelector('[class="label"]:last-of-type').style.display = 'block');
+  } else {
+    document.getElementById('buzzer-grid').style.display = 'none';
+  }
+
   updateTimerDisplay(setupState.timerDuration, setupState.timerDuration);
   playSound('next');
   publish();
 }
 
-// Alias público para el botón HTML
 window.nextQuestion = advanceQuestion;
 
 function buzzHandler(teamName) {
@@ -315,7 +394,7 @@ function buzzHandler(teamName) {
   }
 
   playSound('buzz');
-  publish();
+  publish(); // actualiza buzzedTeam en Firebase → participantes ven quién buzzeó
 }
 
 window.judge = (isCorrect) => {
@@ -342,6 +421,14 @@ window.judge = (isCorrect) => {
     setTimerButtonState('idle');
   } else {
     gameState.setJudged(false);
+    // En modo participante, re-habilitar el buzz para que otro equipo intente
+    if (setupState.buzzMode === BUZZ_MODE.PARTICIPANT) {
+      clearBuzzChannel();
+      if (_unsubBuzz) _unsubBuzz();
+      _unsubBuzz = subscribeToFirstBuzz(name => {
+        if (!gameState.buzzedTeam && !gameState._judged) buzzHandler(name);
+      });
+    }
     resumeTimer();
     setTimerButtonState('running');
   }
@@ -363,7 +450,6 @@ window.useJoker = () => {
   openModal('modal-joker');
 };
 
-/* ── Timer controls ── */
 window.toggleTimer = () => {
   const { running, left } = getTimerState();
   if (running) {
@@ -381,7 +467,8 @@ window.toggleTimer = () => {
 /* ── Pantalla pública ── */
 document.getElementById('btn-open-public')?.addEventListener('click', () => {
   const base = location.href.split('?')[0].split('#')[0];
-  window.open(base + '#audience', 'trivia-publico', 'width=1280,height=720');
+  const code = getSalaCode();
+  window.open(`${base}#audience/${code}`, 'trivia-publico', 'width=1280,height=720');
 });
 
 /* ════════════════════════════════════════════════════════
@@ -391,7 +478,6 @@ document.querySelectorAll('.final-tab[data-final-tab]').forEach(tab => {
   tab.addEventListener('click', () => switchFinalTab(tab.dataset.finalTab));
 });
 
-/** Combina el estado de partida y de setup en el objeto que final-ui necesita. */
 function buildFinalData() {
   return {
     teams:      gameState.teams,
@@ -422,7 +508,16 @@ window.viewScoreboard = () => {
 window.endGame = () => {
   closeModal('modal-end');
   stopTimer();
+  if (_unsubBuzz) { _unsubBuzz(); _unsubBuzz = null; }
   buildFinalScreens(buildFinalData());
+  // Guardar resultados en Firebase para el dashboard post-sesión
+  writeResults({
+    salaCode: getSalaCode(),
+    scores:   gameState.scores,
+    teams:    gameState.teams,
+    questions: setupState.questions.map(({ text, diff, pts, cat }) => ({ text, diff, pts, cat })),
+    history:  gameState._history,
+  });
   showScreen('screen-final');
   DOM.btnExport.style.display = 'inline-flex';
   document.getElementById('btn-back-game')?.remove();
@@ -443,41 +538,41 @@ window.closeModal = closeModal;
 
 window.resetGame = () => {
   stopTimer();
+  if (_unsubBuzz) { _unsubBuzz(); _unsubBuzz = null; }
   setupState.resetSetup();
-
   renderTeamList();
   renderQuestionList();
   renderCatList();
   syncCatSelect();
   updateSetupSummary();
-
-  document.getElementById('inp-timer').value  = '30';
-  document.getElementById('inp-timer-val').textContent  = '30';
-  document.getElementById('inp-jokers').value = '1';
+  document.getElementById('inp-timer').value         = '30';
+  document.getElementById('inp-timer-val').textContent = '30';
+  document.getElementById('inp-jokers').value        = '1';
   document.getElementById('inp-jokers-val').textContent = '1';
-
+  document.getElementById('sala-badge').textContent  = '';
+  window.selectBuzzMode(BUZZ_MODE.MODERATOR);
   DOM.btnExport.style.display = 'none';
   document.getElementById('btn-back-game')?.remove();
-
   showScreen('screen-setup');
   switchTab('t-mode');
   window.selectMode('grupos');
 };
 
-/* ════════════════════════════════════════════════════════
-   INIT
-════════════════════════════════════════════════════════ */
-(function init() {
-  renderSedes();
-  renderTeamList();
-  renderQuestionList();
-  renderCatList();
-  syncCatSelect();
-  updateSetupSummary();
+// Init del moderador
+renderSedes();
+renderTeamList();
+renderQuestionList();
+renderCatList();
+syncCatSelect();
+updateSetupSummary();
 
-  if (IS_AUDIENCE) {
-    document.title          = 'Trivia OAJNU · Pantalla Pública';
-    DOM.pubQ.textContent    = 'Esperando al moderador...';
-    DOM.pubTnum.textContent = '—';
-  }
-})();
+} // end IS_MODERATOR block
+
+/* ════════════════════════════════════════════════════════
+   INIT COMPARTIDO (todos los roles)
+════════════════════════════════════════════════════════ */
+if (IS_AUDIENCE) {
+  document.title = 'Trivia OAJNU · Pantalla Pública';
+  DOM.pubQ.textContent    = 'Esperando al moderador...';
+  DOM.pubTnum.textContent = '—';
+}

@@ -1,3 +1,5 @@
+import { BUZZ_MODE } from '../config/constants.js';
+
 /**
  * Estado de configuración del juego.
  * Solo muta durante la pantalla de setup, antes de iniciar la partida.
@@ -5,6 +7,9 @@
 
 /** @type {'grupos' | 'sedes'} */
 export let mode = 'grupos';
+
+/** @type {'moderator' | 'participant'} */
+export let buzzMode = BUZZ_MODE.MODERATOR;
 
 /** @type {Array<{ name: string, color: string }>} */
 export let teams = [];
@@ -24,6 +29,7 @@ export let pendingImg = null;
 // ── Setters ───────────────────────────────────────────────
 
 export function setMode(m)              { mode = m; }
+export function setBuzzMode(m)          { buzzMode = m; }
 export function setTeams(t)             { teams = t; }
 export function setTimerDuration(n)     { timerDuration = n; }
 export function setJokersPerTeam(n)     { jokersPerTeam = n; }
@@ -42,6 +48,7 @@ export function removeCat(index)        { cats = cats.filter((_, i) => i !== ind
 /** Resetea todo el estado de setup a sus valores iniciales */
 export function resetSetup() {
   mode          = 'grupos';
+  buzzMode      = BUZZ_MODE.MODERATOR;
   teams         = [];
   questions     = [];
   cats          = [];
