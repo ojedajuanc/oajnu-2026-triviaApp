@@ -391,16 +391,30 @@ document.querySelectorAll('.final-tab[data-final-tab]').forEach(tab => {
   tab.addEventListener('click', () => switchFinalTab(tab.dataset.finalTab));
 });
 
+/** Combina el estado de partida y de setup en el objeto que final-ui necesita. */
+function buildFinalData() {
+  return {
+    teams:      gameState.teams,
+    scores:     gameState.scores,
+    _correct:   gameState._correct,
+    _wrong:     gameState._wrong,
+    _catScores: gameState._catScores,
+    _history:   gameState._history,
+    questions:  setupState.questions,
+    cats:       setupState.cats,
+  };
+}
+
 window.viewScoreboard = () => {
-  buildFinalScreens(gameState);
+  buildFinalScreens(buildFinalData());
   showScreen('screen-final');
   DOM.btnExport.style.display = 'none';
   if (!document.getElementById('btn-back-game')) {
-    const btn    = document.createElement('button');
-    btn.id       = 'btn-back-game';
+    const btn     = document.createElement('button');
+    btn.id        = 'btn-back-game';
     btn.className = 'btn btn--outline';
     btn.textContent = '← Volver al juego';
-    btn.onclick  = () => showScreen('screen-game');
+    btn.onclick   = () => showScreen('screen-game');
     DOM.finalActions.prepend(btn);
   }
 };
@@ -408,7 +422,7 @@ window.viewScoreboard = () => {
 window.endGame = () => {
   closeModal('modal-end');
   stopTimer();
-  buildFinalScreens(gameState);
+  buildFinalScreens(buildFinalData());
   showScreen('screen-final');
   DOM.btnExport.style.display = 'inline-flex';
   document.getElementById('btn-back-game')?.remove();
