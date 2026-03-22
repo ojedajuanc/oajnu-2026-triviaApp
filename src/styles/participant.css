@@ -1,0 +1,127 @@
+/* ─────────────────────────────────────────
+   PARTICIPANT SCREEN
+   Pantalla mobile-first para participantes que buzzean desde su celu.
+   URL: /#sala/{CODIGO}
+───────────────────────────────────────── */
+
+#screen-participant {
+  display: none;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--c-gris-f);
+}
+html.is-participant #screen-participant { display: flex; }
+html.is-participant #app               { display: none !important; }
+html.is-participant #screen-public     { display: none !important; }
+
+.part-header {
+  background: var(--c-naranja);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.part-brand { font-size: 14px; font-weight: 900; color: var(--c-blanco); letter-spacing: 1px; text-transform: uppercase; }
+.part-sala  { font-size: 20px; font-weight: 900; color: var(--c-blanco); letter-spacing: 4px; }
+
+.part-section { padding: 24px 20px; flex: 1; display: flex; flex-direction: column; align-items: center; }
+.part-title   { font-size: 18px; font-weight: 900; color: var(--c-negro); margin-bottom: 20px; text-align: center; }
+
+/* Team selector */
+.part-teams { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 340px; }
+.part-team-btn {
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 2px solid var(--c-gris-m);
+  background: var(--c-blanco);
+  font-size: 15px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color .15s, background .15s;
+}
+.part-team-btn:hover { border-color: var(--c-naranja); background: var(--c-naranja-bg); }
+
+/* In-game */
+.part-team-badge {
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--c-blanco);
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+.part-question {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-negro);
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  max-width: 340px;
+}
+.part-timer {
+  font-size: 64px;
+  font-weight: 900;
+  color: var(--c-naranja);
+  line-height: 1;
+  margin-bottom: 32px;
+}
+.part-timer--warn   { color: #e65100; }
+.part-timer--danger { color: var(--c-error); }
+
+.part-buzz-btn {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-naranja);
+  color: var(--c-blanco);
+  font-size: 22px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform .1s, background .15s;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 0 var(--c-naranja-d);
+}
+.part-buzz-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--c-naranja-d);
+}
+.part-buzz-btn:disabled { background: var(--c-gris-m); color: var(--c-gris-b); box-shadow: none; cursor: not-allowed; }
+.part-buzz-btn--fired   { background: var(--c-ok); box-shadow: 0 6px 0 var(--c-ok-d); }
+
+.part-buzz-status {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--c-gris-b);
+  text-align: center;
+  min-height: 24px;
+}
+.part-buzz-status--first { color: var(--c-ok); }
+.part-buzz-status--late  { color: var(--c-error); }
+
+/* Mini scoreboard */
+.part-scores {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 340px;
+}
+.part-score-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  background: var(--c-blanco);
+  border: 1.5px solid var(--c-gris-m);
+}
+.part-score-item--me { border-color: var(--c-naranja); background: var(--c-naranja-bg); }
+.part-score-name { flex: 1; font-size: 13px; font-weight: 800; }
+.part-score-pts  { font-size: 15px; font-weight: 900; color: var(--c-naranja); }
